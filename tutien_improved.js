@@ -10,7 +10,7 @@ module.exports = class {
     author: "God Marcos",
     info: "Tu luyện nâng cấp với hệ thống Clan hoàn chỉnh",
     Category: "Game",
-    guides: "[train|dokiep|info|quest|shop|boss|phai|clan|top|hide|pvp|dungeon|pet]",
+    guides: "[train|dokiep|info|quest|shop|boss|phai|clan|top|hide|pvp|dungeon|pet|battle|dph]",
     cd: 3,
     hasPrefix: true
   };
@@ -48,6 +48,11 @@ module.exports = class {
     thechat: { name: "💼 Gói Thể Chất", price: 1, effect: "+10~20 Thể Chất" },
     petbox: { name: "🎁 Rương Pet", price: 5, effect: "Mở ra 1 pet ngẫu nhiên" },
     
+    // Battle items
+    energy: { name: "⚡ Năng Lượng Chiến Đấu", price: 3, effect: "+50 năng lượng chiến đấu" },
+    skillbook: { name: "📖 Sách Kỹ Năng", price: 10, effect: "Nâng cấp ngẫu nhiên 1 kỹ năng" },
+    petfood: { name: "🍖 Thức Ăn Pet", price: 4, effect: "+EXP cho pet đang trang bị" },
+    
     // Clan items
     clanstone: { name: "🏗️ Đá Xây Dựng", price: 10, effect: "Nâng cấp công trình clan" },
     clanbuff: { name: "⚡ Buff Clan", price: 8, effect: "+50% EXP cho toàn clan trong 1h" },
@@ -73,6 +78,129 @@ module.exports = class {
     "👻 Bóng Ma", "🦂 Bọ Cạp Lửa", "🐺 Sói Băng", "🐉 Long Linh", "🧚 Tiên Linh",
     "💀 Lich", "🔥 Phượng Hoàng", "🌪️ Rồng Gió", "⚡ Rồng Sấm", "🌌 Rồng Vũ Trụ"
   ];
+
+  // Enhanced Pet System with Rarity
+  static petRarities = {
+    common: { name: "⚪ Thường", chance: 0.5, statMultiplier: 1, color: "⚪" },
+    rare: { name: "🔵 Hiếm", chance: 0.3, statMultiplier: 1.5, color: "🔵" },
+    epic: { name: "🟣 Sử Thi", chance: 0.15, statMultiplier: 2, color: "🟣" },
+    legendary: { name: "🟡 Huyền Thoại", chance: 0.04, statMultiplier: 3, color: "🟡" },
+    mythical: { name: "🔴 Thần Thoại", chance: 0.01, statMultiplier: 5, color: "🔴" }
+  };
+
+  static petTypes = [
+    { name: "🐶 Chó Nhỏ", baseAttack: 50, baseDefense: 30, baseSpeed: 40, element: "earth" },
+    { name: "🐱 Mèo Mun", baseAttack: 40, baseDefense: 35, baseSpeed: 60, element: "dark" },
+    { name: "🦊 Cáo", baseAttack: 45, baseDefense: 25, baseSpeed: 70, element: "fire" },
+    { name: "🐯 Hổ Nhỏ", baseAttack: 80, baseDefense: 50, baseSpeed: 45, element: "earth" },
+    { name: "🐲 Rồng Con", baseAttack: 100, baseDefense: 80, baseSpeed: 60, element: "fire" },
+    { name: "🦄 Kỳ Lân", baseAttack: 90, baseDefense: 70, baseSpeed: 80, element: "light" },
+    { name: "🐵 Khỉ Thông Minh", baseAttack: 55, baseDefense: 40, baseSpeed: 85, element: "wind" },
+    { name: "🦅 Ưng Lửa", baseAttack: 75, baseDefense: 45, baseSpeed: 90, element: "fire" },
+    { name: "🐍 Xà Tinh", baseAttack: 65, baseDefense: 55, baseSpeed: 50, element: "poison" },
+    { name: "🦖 Khủng Long", baseAttack: 120, baseDefense: 100, baseSpeed: 30, element: "earth" },
+    { name: "👻 Bóng Ma", baseAttack: 70, baseDefense: 20, baseSpeed: 95, element: "dark" },
+    { name: "🦂 Bọ Cạp Lửa", baseAttack: 85, baseDefense: 60, baseSpeed: 40, element: "fire" },
+    { name: "🐺 Sói Băng", baseAttack: 75, baseDefense: 55, baseSpeed: 70, element: "ice" },
+    { name: "🐉 Long Linh", baseAttack: 150, baseDefense: 120, baseSpeed: 80, element: "water" },
+    { name: "🧚 Tiên Linh", baseAttack: 60, baseDefense: 40, baseSpeed: 100, element: "light" },
+    { name: "💀 Lich", baseAttack: 95, baseDefense: 85, baseSpeed: 35, element: "dark" },
+    { name: "🔥 Phượng Hoàng", baseAttack: 140, baseDefense: 90, baseSpeed: 85, element: "fire" },
+    { name: "🌪️ Rồng Gió", baseAttack: 130, baseDefense: 80, baseSpeed: 110, element: "wind" },
+    { name: "⚡ Rồng Sấm", baseAttack: 145, baseDefense: 95, baseSpeed: 75, element: "thunder" },
+    { name: "🌌 Rồng Vũ Trụ", baseAttack: 200, baseDefense: 150, baseSpeed: 100, element: "void" }
+  ];
+
+  static petEquipment = {
+    weapon: {
+      "⚔️ Kiếm Sắt": { attack: 20, price: 10, rarity: "common" },
+      "🗡️ Kiếm Bạc": { attack: 35, price: 25, rarity: "rare" },
+      "⚡ Kiếm Sấm": { attack: 60, price: 50, rarity: "epic" },
+      "🔥 Kiếm Lửa Thiêng": { attack: 100, price: 100, rarity: "legendary" },
+      "🌌 Kiếm Vũ Trụ": { attack: 200, price: 250, rarity: "mythical" }
+    },
+    armor: {
+      "🛡️ Giáp Da": { defense: 15, price: 8, rarity: "common" },
+      "⚙️ Giáp Sắt": { defense: 30, price: 20, rarity: "rare" },
+      "💎 Giáp Kim Cương": { defense: 50, price: 45, rarity: "epic" },
+      "🌟 Giáp Thiên Thần": { defense: 85, price: 90, rarity: "legendary" },
+      "🛡️ Giáp Hỗn Độn": { defense: 150, price: 200, rarity: "mythical" }
+    },
+    accessory: {
+      "💍 Nhẫn Sức Mạnh": { attack: 10, defense: 5, speed: 5, price: 15, rarity: "rare" },
+      "📿 Vòng Cổ Thần Thánh": { attack: 25, defense: 15, speed: 10, price: 40, rarity: "epic" },
+      "👑 Vương Miện Bá Chủ": { attack: 50, defense: 30, speed: 20, price: 80, rarity: "legendary" },
+      "🔮 Châu Báu Vô Cực": { attack: 100, defense: 60, speed: 40, price: 200, rarity: "mythical" }
+    }
+  };
+
+  // Enhanced Battle System
+  static battleTypes = {
+    arena: { name: "🏟️ Đấu Trường", cooldown: 600000, reward: { exp: 500, lt: 3 } },
+    tournament: { name: "🏆 Giải Đấu", cooldown: 1800000, reward: { exp: 1500, lt: 10 } },
+    clanwar: { name: "⚔️ Chiến Tranh Clan", cooldown: 3600000, reward: { exp: 3000, lt: 25 } },
+    challenge: { name: "💥 Thách Đấu", cooldown: 300000, reward: { exp: 200, lt: 1 } }
+  };
+
+  static battleSkills = {
+    attack: { name: "🗡️ Tấn Công", damage: 1.2, cost: 10 },
+    defend: { name: "🛡️ Phòng Thủ", damage: 0.8, defense: 1.5, cost: 8 },
+    speed: { name: "💨 Tốc Độ", speed: 1.3, cost: 12 },
+    special: { name: "⚡ Đặc Biệt", damage: 1.8, cost: 20 },
+    heal: { name: "❤️ Hồi Phục", heal: 0.3, cost: 15 }
+  };
+
+  // Helper functions for enhanced systems
+  static generatePetWithRarity() {
+    const petType = this.petTypes[Math.floor(Math.random() * this.petTypes.length)];
+    const rarityRoll = Math.random();
+    let rarity = "common";
+    
+    let cumulative = 0;
+    for (const [key, value] of Object.entries(this.petRarities)) {
+      cumulative += value.chance;
+      if (rarityRoll <= cumulative) {
+        rarity = key;
+        break;
+      }
+    }
+    
+    const rarityData = this.petRarities[rarity];
+    return {
+      name: petType.name,
+      rarity: rarity,
+      attack: Math.floor(petType.baseAttack * rarityData.statMultiplier),
+      defense: Math.floor(petType.baseDefense * rarityData.statMultiplier),
+      speed: Math.floor(petType.baseSpeed * rarityData.statMultiplier),
+      element: petType.element,
+      level: 1,
+      exp: 0,
+      equipment: { weapon: null, armor: null, accessory: null }
+    };
+  }
+
+  static calculatePetPower(pet) {
+    if (!pet) return 0;
+    let power = pet.attack + pet.defense + pet.speed;
+    
+    // Add equipment bonuses
+    Object.values(pet.equipment || {}).forEach(item => {
+      if (item && this.getAllEquipment()[item]) {
+        const eq = this.getAllEquipment()[item];
+        power += (eq.attack || 0) + (eq.defense || 0) + (eq.speed || 0);
+      }
+    });
+    
+    return power * pet.level;
+  }
+
+  static getAllEquipment() {
+    const all = {};
+    Object.values(this.petEquipment).forEach(category => {
+      Object.assign(all, category);
+    });
+    return all;
+  }
 
   // Data management functions
   static getAllData() {
@@ -190,21 +318,69 @@ module.exports = class {
         hideInfo: false,
         petInventory: [],
         petEquipped: null,
-        lastClanActivity: 0
+        lastClanActivity: 0,
+        // Enhanced battle system data
+        battleCooldowns: {},
+        battleWins: { arena: 0, tournament: 0, clanwar: 0, challenge: 0 },
+        battleSkills: { attack: 1, defend: 1, speed: 1, special: 0, heal: 0 },
+        battleEnergy: 100,
+        // Enhanced pet system data
+        petCollection: [],
+        petEquipment: [],
+        petStorage: { weapon: [], armor: [], accessory: [] },
+        petPoints: 0
       };
     }
 
     const user = data[senderID];
     user.name = fbName;
+    
+    // Backward compatibility - migrate old data to new structure
+    if (!user.battleCooldowns) user.battleCooldowns = {};
+    if (!user.battleWins) user.battleWins = { arena: 0, tournament: 0, clanwar: 0, challenge: 0 };
+    if (!user.battleSkills) user.battleSkills = { attack: 1, defend: 1, speed: 1, special: 0, heal: 0 };
+    if (user.battleEnergy === undefined) user.battleEnergy = 100;
+    if (!user.petCollection) user.petCollection = [];
+    if (!user.petEquipment) user.petEquipment = [];
+    if (!user.petStorage) user.petStorage = { weapon: [], armor: [], accessory: [] };
+    if (user.petPoints === undefined) user.petPoints = 0;
+    if (!user.lastEnergyRegen) user.lastEnergyRegen = Date.now();
+    
+    // Migrate old pet system to new system
+    if (user.petInventory && user.petInventory.length > 0 && user.petCollection.length === 0) {
+      user.petInventory.forEach(petName => {
+        const petType = this.petTypes.find(p => p.name === petName);
+        if (petType) {
+          const pet = {
+            id: Date.now() + Math.random(),
+            name: petName,
+            rarity: "common",
+            attack: petType.baseAttack,
+            defense: petType.baseDefense,
+            speed: petType.baseSpeed,
+            element: petType.element,
+            level: 1,
+            exp: 0,
+            equipment: { weapon: null, armor: null, accessory: null }
+          };
+          user.petCollection.push(pet);
+        }
+      });
+      if (user.petEquipped && typeof user.petEquipped === 'string') {
+        const equippedPet = user.petCollection.find(p => p.name === user.petEquipped);
+        user.petEquipped = equippedPet?.id || null;
+      }
+    }
     const cmd = args[0]?.toLowerCase();
 
     if (!cmd) {
-      const msg = `📜 𝗧𝗨 𝗧𝗜Ê𝗡 𝗠𝗘𝗡𝗨 𝗩𝟳.𝟬\n━━━━━━━━━━━━━━━━\n` +
+      const msg = `📜 𝗧𝗨 𝗧𝗜Ê𝗡 𝗠𝗘𝗡𝗨 𝗩�.𝟬 - 𝗘𝗡𝗛𝗔𝗡𝗖𝗘𝗗\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
         `🌱 Tu luyện: train | dokiep | quest | dungeon | info\n` +
-        `🎮 Khác: pvp <@tag> | boss | phai | artifact | event\n` +
+        `⚔️ Đấu phá: battle | dph | pvp <@tag> | boss\n` +
+        `🐾 Pet: pet | pet list | pet shop | pet info\n` +
         `🏯 Bang hội: clan | cjoin | cleave | cinfo | cupgrade\n` +
         `🛍️ Vật phẩm: shop | buy <mã> | use <mã> | inv\n` +
-        `⚙️ Hệ thống: top | clantop | hide | pet | rebirth`;
+        `⚙️ Hệ thống: top | clantop | hide | phai | rebirth`;
       return api.sendMessage(msg, threadID, messageID);
     }
 
@@ -566,11 +742,64 @@ module.exports = class {
       if (code === "danexp") user.exp += 1000;
       if (code === "thechat") user.theChat += Math.floor(Math.random() * 11) + 10;
       if (code === "petbox") {
-        const pet = this.petList[Math.floor(Math.random() * this.petList.length)];
-        user.petInventory.push(pet);
+        const pet = this.generatePetWithRarity();
+        const rarityColor = this.petRarities[pet.rarity].color;
+        pet.id = Date.now() + Math.random(); // Generate unique ID
+        user.petCollection.push(pet);
+        user.petPoints += this.petRarities[pet.rarity].statMultiplier * 10;
         this.saveAllData(data);
-        return api.sendMessage(`🎯 Đã dùng ${this.items[code].name}\n🐾 Bạn nhận được: ${pet}`, threadID, messageID);
+        return api.sendMessage(`🎯 Đã dùng ${this.items[code].name}\n🐾 Bạn nhận được: ${rarityColor} ${pet.name} (${this.petRarities[pet.rarity].name})\n⚔️ ATK: ${pet.attack} | 🛡️ DEF: ${pet.defense} | 💨 SPD: ${pet.speed}`, threadID, messageID);
       }
+      
+      // New battle items
+      if (code === "energy") {
+        user.battleEnergy = Math.min(100, user.battleEnergy + 50);
+        this.saveAllData(data);
+        return api.sendMessage(`⚡ Đã dùng ${this.items[code].name}\nNăng lượng hiện tại: ${user.battleEnergy}/100`, threadID, messageID);
+      }
+      
+      if (code === "skillbook") {
+        const skills = Object.keys(user.battleSkills);
+        const availableSkills = skills.filter(skill => user.battleSkills[skill] < 5);
+        if (availableSkills.length === 0) {
+          this.saveAllData(data);
+          return api.sendMessage("📖 Tất cả kỹ năng đã đạt cấp tối đa!", threadID, messageID);
+        }
+        const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+        user.battleSkills[randomSkill]++;
+        this.saveAllData(data);
+        return api.sendMessage(`🎯 Đã dùng ${this.items[code].name}\n🔥 Kỹ năng ${this.battleSkills[randomSkill].name} tăng lên level ${user.battleSkills[randomSkill]}!`, threadID, messageID);
+      }
+      
+      if (code === "petfood") {
+        if (!user.petEquipped) {
+          this.saveAllData(data);
+          return api.sendMessage("❌ Hãy trang bị pet trước khi sử dụng!", threadID, messageID);
+        }
+        const pet = user.petCollection.find(p => p.id === user.petEquipped);
+        if (!pet) {
+          this.saveAllData(data);
+          return api.sendMessage("❌ Pet không tồn tại!", threadID, messageID);
+        }
+        const expGain = 200 + (pet.level * 50);
+        pet.exp += expGain;
+        
+        // Level up check
+        const expNeeded = pet.level * 1000;
+        if (pet.exp >= expNeeded && pet.level < 10) {
+          pet.level++;
+          pet.exp -= expNeeded;
+          pet.attack = Math.floor(pet.attack * 1.1);
+          pet.defense = Math.floor(pet.defense * 1.1);
+          pet.speed = Math.floor(pet.speed * 1.1);
+          this.saveAllData(data);
+          return api.sendMessage(`🎯 Đã dùng ${this.items[code].name}\n🔥 ${pet.name} lên level ${pet.level}! Tất cả chỉ số tăng 10%!`, threadID, messageID);
+        }
+        
+        this.saveAllData(data);
+        return api.sendMessage(`🎯 Đã dùng ${this.items[code].name}\n🐾 ${pet.name} nhận ${expGain} EXP (${pet.exp}/${pet.level * 1000})`, threadID, messageID);
+      }
+      
       if (code === "clanbuff" && user.clan) {
         const clan = clanData[user.clan];
         clan.buffExpire = Date.now() + 3600000; // 1 hour
@@ -594,30 +823,370 @@ module.exports = class {
       return api.sendMessage(msg.trim(), threadID, messageID);
     }
 
-    // Enhanced pet system
+    // Enhanced pet system with rarity and equipment
     if (cmd === "pet") {
       const sub = args[1];
       if (!sub) {
-        return api.sendMessage(user.petEquipped ? `🐾 Pet của bạn: ${user.petEquipped}` : "🐾 Bạn chưa có pet, hãy dùng `use petbox` để mở!", threadID, messageID);
+        if (!user.petEquipped) {
+          return api.sendMessage("🐾 Bạn chưa có pet, hãy dùng `use petbox` để mở!\n📚 Hướng dẫn: pet list | pet equip <id> | pet info | pet shop | pet upgrade", threadID, messageID);
+        }
+        const pet = user.petCollection.find(p => p.id === user.petEquipped);
+        if (!pet) {
+          user.petEquipped = null;
+          this.saveAllData(data);
+          return api.sendMessage("❌ Pet không tồn tại. Đã bỏ trang bị.", threadID, messageID);
+        }
+        const rarityColor = this.petRarities[pet.rarity].color;
+        const power = this.calculatePetPower(pet);
+        return api.sendMessage(`🐾 ${rarityColor} ${pet.name} (Lv.${pet.level})\n⚔️ ATK: ${pet.attack} | 🛡️ DEF: ${pet.defense} | 💨 SPD: ${pet.speed}\n💪 Sức mạnh: ${power} | ⚡ Element: ${pet.element}`, threadID, messageID);
       }
-      if (sub === "inv") {
-        if (!user.petInventory || user.petInventory.length === 0)
-          return api.sendMessage("🎒 Bạn chưa có pet nào trong kho!", threadID, messageID);
-        const list = user.petInventory.map((p, i) => `${i + 1}. ${p}`).join("\n");
-        return api.sendMessage(`🎒 Pet trong kho:\n${list}`, threadID, messageID);
+      
+      if (sub === "list" || sub === "inv") {
+        if (!user.petCollection || user.petCollection.length === 0)
+          return api.sendMessage("🎒 Bạn chưa có pet nào!", threadID, messageID);
+        
+        let msg = "🎒 𝗖𝗢𝗟𝗟𝗘𝗖𝗧𝗜𝗢𝗡 𝗣𝗘𝗧\n━━━━━━━━━━━━━━━━\n";
+        user.petCollection.forEach((pet, i) => {
+          const rarityColor = this.petRarities[pet.rarity].color;
+          const equipped = user.petEquipped === pet.id ? " ✅" : "";
+          msg += `${i + 1}. ${rarityColor} ${pet.name} (Lv.${pet.level})${equipped}\n`;
+          msg += `   ⚔️${pet.attack} 🛡️${pet.defense} 💨${pet.speed} | ${pet.element}\n\n`;
+        });
+        return api.sendMessage(msg.trim(), threadID, messageID);
       }
+      
       if (sub === "equip") {
-        const name = args.slice(2).join(" ");
-        if (!name) return api.sendMessage("❌ Dùng: pet equip <tên pet>", threadID, messageID);
-        if (!user.petInventory.includes(name))
-          return api.sendMessage("❌ Bạn không sở hữu pet này.", threadID, messageID);
-        user.petEquipped = name;
+        const index = parseInt(args[2]) - 1;
+        if (isNaN(index) || !user.petCollection[index])
+          return api.sendMessage("❌ ID pet không hợp lệ! Dùng `pet list` để xem danh sách.", threadID, messageID);
+        
+        const pet = user.petCollection[index];
+        if (!pet.id) pet.id = Date.now() + Math.random(); // Generate ID if missing
+        user.petEquipped = pet.id;
         this.saveAllData(data);
-        return api.sendMessage(`✅ Đã trang bị pet: ${name}`, threadID, messageID);
+        
+        const rarityColor = this.petRarities[pet.rarity].color;
+        return api.sendMessage(`✅ Đã trang bị: ${rarityColor} ${pet.name} (Lv.${pet.level})`, threadID, messageID);
       }
+      
       if (sub === "info") {
-        if (!user.petEquipped) return api.sendMessage("🐾 Bạn chưa trang bị pet nào.", threadID, messageID);
-        return api.sendMessage(`📋 Pet đang dùng: ${user.petEquipped}`, threadID, messageID);
+        const index = parseInt(args[2]) - 1;
+        let pet;
+        
+        if (isNaN(index)) {
+          if (!user.petEquipped) return api.sendMessage("🐾 Bạn chưa trang bị pet nào.", threadID, messageID);
+          pet = user.petCollection.find(p => p.id === user.petEquipped);
+        } else {
+          pet = user.petCollection[index];
+        }
+        
+        if (!pet) return api.sendMessage("❌ Pet không tồn tại!", threadID, messageID);
+        
+        const rarityColor = this.petRarities[pet.rarity].color;
+        const power = this.calculatePetPower(pet);
+        let msg = `📋 ${rarityColor} ${pet.name} (${this.petRarities[pet.rarity].name})\n`;
+        msg += `🔥 Level: ${pet.level} | 💫 EXP: ${pet.exp}\n`;
+        msg += `⚔️ ATK: ${pet.attack} | 🛡️ DEF: ${pet.defense} | 💨 SPD: ${pet.speed}\n`;
+        msg += `⚡ Element: ${pet.element} | 💪 Sức mạnh: ${power}\n\n`;
+        msg += `🎯 Trang bị:\n`;
+        msg += `⚔️ Vũ khí: ${pet.equipment.weapon || "Chưa có"}\n`;
+        msg += `🛡️ Giáp: ${pet.equipment.armor || "Chưa có"}\n`;
+        msg += `💍 Phụ kiện: ${pet.equipment.accessory || "Chưa có"}`;
+        
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "shop") {
+        let msg = "🏪 𝗣𝗘𝗧 𝗘𝗤𝗨𝗜𝗣𝗠𝗘𝗡𝗧 𝗦𝗛𝗢𝗣\n━━━━━━━━━━━━━━━━━━━━━━\n";
+        
+        ["weapon", "armor", "accessory"].forEach(type => {
+          const typeName = type === "weapon" ? "⚔️ VŨ KHÍ" : type === "armor" ? "🛡️ GIÁP" : "💍 PHỤ KIỆN";
+          msg += `\n${typeName}:\n`;
+          Object.entries(this.petEquipment[type]).forEach(([name, item]) => {
+            const rarity = this.petRarities[item.rarity].color;
+            msg += `• ${rarity} ${name} - ${item.price} LT\n`;
+            if (item.attack) msg += `  ⚔️ +${item.attack} ATK`;
+            if (item.defense) msg += `  🛡️ +${item.defense} DEF`;
+            if (item.speed) msg += `  💨 +${item.speed} SPD`;
+            msg += "\n";
+          });
+        });
+        
+        msg += "\n📝 Dùng: pet buy <tên trang bị>";
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "buy") {
+        const itemName = args.slice(2).join(" ");
+        const allEquipment = this.getAllEquipment();
+        const item = allEquipment[itemName];
+        
+        if (!item) return api.sendMessage("❌ Trang bị không tồn tại! Dùng `pet shop` để xem danh sách.", threadID, messageID);
+        if (user.linhThach < item.price) return api.sendMessage(`❌ Không đủ Linh Thạch! Cần ${item.price} LT.`, threadID, messageID);
+        
+        user.linhThach -= item.price;
+        
+        // Determine equipment type
+        let type = null;
+        Object.entries(this.petEquipment).forEach(([t, items]) => {
+          if (items[itemName]) type = t;
+        });
+        
+        user.petStorage[type].push(itemName);
+        this.saveAllData(data);
+        
+        const rarity = this.petRarities[item.rarity].color;
+        return api.sendMessage(`✅ Đã mua ${rarity} ${itemName}! Vào kho trang bị pet.`, threadID, messageID);
+      }
+      
+      if (sub === "equip_item") {
+        if (!user.petEquipped) return api.sendMessage("❌ Hãy trang bị pet trước!", threadID, messageID);
+        
+        const itemName = args.slice(2).join(" ");
+        const allEquipment = this.getAllEquipment();
+        const item = allEquipment[itemName];
+        
+        if (!item) return api.sendMessage("❌ Trang bị không tồn tại!", threadID, messageID);
+        
+        // Find equipment type
+        let type = null;
+        Object.entries(this.petEquipment).forEach(([t, items]) => {
+          if (items[itemName]) type = t;
+        });
+        
+        if (!user.petStorage[type].includes(itemName)) {
+          return api.sendMessage("❌ Bạn không sở hữu trang bị này!", threadID, messageID);
+        }
+        
+        const pet = user.petCollection.find(p => p.id === user.petEquipped);
+        if (!pet) return api.sendMessage("❌ Pet không tồn tại!", threadID, messageID);
+        
+        // Unequip current item if any
+        if (pet.equipment[type]) {
+          user.petStorage[type].push(pet.equipment[type]);
+        }
+        
+        // Equip new item
+        pet.equipment[type] = itemName;
+        user.petStorage[type] = user.petStorage[type].filter(i => i !== itemName);
+        
+        this.saveAllData(data);
+        
+        const rarity = this.petRarities[item.rarity].color;
+        return api.sendMessage(`✅ Đã trang bị ${rarity} ${itemName} cho ${pet.name}!`, threadID, messageID);
+      }
+      
+      if (sub === "storage") {
+        let msg = "🎒 𝗞𝗛𝗢 𝗧𝗥𝗔𝗡𝗚 𝗕𝗜̣ 𝗣𝗘𝗧\n━━━━━━━━━━━━━━━━━\n";
+        
+        ["weapon", "armor", "accessory"].forEach(type => {
+          const typeName = type === "weapon" ? "⚔️ VŨ KHÍ" : type === "armor" ? "🛡️ GIÁP" : "💍 PHỤ KIỆN";
+          msg += `\n${typeName}:\n`;
+          
+          if (user.petStorage[type].length === 0) {
+            msg += "• Trống\n";
+          } else {
+            user.petStorage[type].forEach(itemName => {
+              const item = this.getAllEquipment()[itemName];
+              const rarity = this.petRarities[item.rarity].color;
+              msg += `• ${rarity} ${itemName}\n`;
+            });
+          }
+        });
+        
+        msg += "\n📝 Dùng: pet equip_item <tên trang bị>";
+        return api.sendMessage(msg, threadID, messageID);
+      }
+    }
+
+    // Enhanced Battle System
+    if (cmd === "battle" || cmd === "dph") {
+      const sub = args[1]?.toLowerCase();
+      
+      if (!sub) {
+        let msg = "⚔️ 𝗛𝗘̣̂ 𝗧𝗛𝗢̂́𝗡𝗚 Đ𝗔̂́𝗨 𝗣𝗛𝗔́\n━━━━━━━━━━━━━━━━━━━━\n";
+        msg += "🏟️ arena - Đấu trường (10 phút)\n";
+        msg += "🏆 tournament - Giải đấu (30 phút)\n";
+        msg += "⚔️ clanwar - Chiến tranh clan (60 phút)\n";
+        msg += "💥 challenge @user - Thách đấu người chơi\n";
+        msg += "🎯 skills - Xem kỹ năng chiến đấu\n";
+        msg += "📊 stats - Thống kê chiến đấu\n\n";
+        msg += `⚡ Năng lượng: ${user.battleEnergy}/100`;
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "arena" || sub === "tournament" || sub === "clanwar") {
+        const battleType = this.battleTypes[sub];
+        const now = Date.now();
+        
+        if (user.battleCooldowns[sub] && now - user.battleCooldowns[sub] < battleType.cooldown) {
+          const left = Math.ceil((battleType.cooldown - (now - user.battleCooldowns[sub])) / 60000);
+          return api.sendMessage(`⏱️ Còn ${left} phút nữa mới có thể tham gia ${battleType.name}.`, threadID, messageID);
+        }
+        
+        if (user.battleEnergy < 20) {
+          return api.sendMessage("❌ Không đủ năng lượng! Cần tối thiểu 20 năng lượng.", threadID, messageID);
+        }
+        
+        // Clan war requires clan membership
+        if (sub === "clanwar" && !user.clan) {
+          return api.sendMessage("❌ Cần gia nhập clan để tham gia chiến tranh!", threadID, messageID);
+        }
+        
+        user.battleEnergy -= 20;
+        user.battleCooldowns[sub] = now;
+        
+        // Calculate battle power
+        let userPower = this.realms.indexOf(user.realm) * 100 + user.theChat;
+        
+        // Add pet power
+        if (user.petEquipped) {
+          const pet = user.petCollection.find(p => p.id === user.petEquipped);
+          if (pet) {
+            userPower += this.calculatePetPower(pet);
+          }
+        }
+        
+        // Add skill bonuses
+        Object.entries(user.battleSkills).forEach(([skill, level]) => {
+          userPower += level * 10;
+        });
+        
+        // Simulate opponent
+        const opponentPower = userPower * (0.8 + Math.random() * 0.4);
+        const userRoll = Math.random() * 100;
+        const opponentRoll = Math.random() * 100;
+        
+        const userTotal = userPower + userRoll;
+        const opponentTotal = opponentPower + opponentRoll;
+        
+        let result = "";
+        if (userTotal > opponentTotal) {
+          // Victory
+          user.exp += battleType.reward.exp;
+          user.linhThach += battleType.reward.lt;
+          user.battleWins[sub]++;
+          user.battleEnergy = Math.min(100, user.battleEnergy + 10);
+          
+          result = `🏆 THẮNG! Nhận ${battleType.reward.exp} EXP + ${battleType.reward.lt} LT\n`;
+          result += `⚡ +10 năng lượng chiến đấu`;
+          
+          // Skill upgrade chance
+          if (Math.random() < 0.3) {
+            const skills = Object.keys(user.battleSkills);
+            const randomSkill = skills[Math.floor(Math.random() * skills.length)];
+            if (user.battleSkills[randomSkill] < 5) {
+              user.battleSkills[randomSkill]++;
+              result += `\n🔥 Kỹ năng ${this.battleSkills[randomSkill].name} tăng lên level ${user.battleSkills[randomSkill]}!`;
+            }
+          }
+        } else {
+          // Defeat
+          const consolationExp = Math.floor(battleType.reward.exp * 0.3);
+          user.exp += consolationExp;
+          result = `💥 THUA! Nhận ${consolationExp} EXP an ủi`;
+        }
+        
+        this.saveAllData(data);
+        return api.sendMessage(`${battleType.name}\n${result}`, threadID, messageID);
+      }
+      
+      if (sub === "challenge") {
+        const targetID = Object.keys(event.mentions)[0];
+        if (!targetID) return api.sendMessage("❌ Vui lòng tag đối thủ!", threadID, messageID);
+        if (targetID === senderID) return api.sendMessage("❌ Không thể tự thách đấu bản thân!", threadID, messageID);
+        
+        const target = data[targetID];
+        if (!target) return api.sendMessage("❌ Đối thủ chưa tu tiên!", threadID, messageID);
+        
+        const now = Date.now();
+        if (user.battleCooldowns.challenge && now - user.battleCooldowns.challenge < 300000) {
+          const left = Math.ceil((300000 - (now - user.battleCooldowns.challenge)) / 1000);
+          return api.sendMessage(`⏱️ Còn ${left}s nữa mới có thể thách đấu.`, threadID, messageID);
+        }
+        
+        if (user.battleEnergy < 10) {
+          return api.sendMessage("❌ Không đủ năng lượng! Cần tối thiểu 10 năng lượng.", threadID, messageID);
+        }
+        
+        user.battleEnergy -= 10;
+        user.battleCooldowns.challenge = now;
+        
+        // Calculate powers with pets and equipment
+        let userPower = this.realms.indexOf(user.realm) * 100 + user.theChat;
+        let targetPower = this.realms.indexOf(target.realm) * 100 + target.theChat;
+        
+        // Add pet powers
+        if (user.petEquipped) {
+          const pet = user.petCollection?.find(p => p.id === user.petEquipped);
+          if (pet) userPower += this.calculatePetPower(pet);
+        }
+        
+        if (target.petEquipped) {
+          const pet = target.petCollection?.find(p => p.id === target.petEquipped);
+          if (pet) targetPower += this.calculatePetPower(pet);
+        }
+        
+        const userRoll = Math.random() * 50;
+        const targetRoll = Math.random() * 50;
+        const userTotal = userPower + userRoll;
+        const targetTotal = targetPower + targetRoll;
+        
+        let resultMsg = "";
+        if (userTotal > targetTotal) {
+          const expGain = Math.floor(targetPower / 2);
+          resultMsg = `🏆 Bạn đã thắng ${target.name}! Nhận ${expGain} EXP + 2 LT.`;
+          user.exp += expGain;
+          user.linhThach += 2;
+          user.battleWins.challenge++;
+          target.theChat = Math.max(10, target.theChat - 3);
+        } else if (userTotal < targetTotal) {
+          const expGain = Math.floor(userPower / 4);
+          resultMsg = `💥 Bạn bị ${target.name} đánh bại! Nhận ${expGain} EXP.`;
+          user.exp += expGain;
+          user.theChat = Math.max(10, user.theChat - 3);
+        } else {
+          const expGain = Math.floor(userPower / 3);
+          resultMsg = `🤝 Hòa với ${target.name}! Cả hai nhận ${expGain} EXP.`;
+          user.exp += expGain;
+          target.exp += expGain;
+        }
+        
+        this.saveAllData(data);
+        return api.sendMessage(resultMsg, threadID, messageID);
+      }
+      
+      if (sub === "skills") {
+        let msg = "🎯 𝗞𝗬̃ 𝗡𝗔̆𝗡𝗚 𝗖𝗛𝗜𝗘̂́𝗡 Đ𝗔̂́𝗨\n━━━━━━━━━━━━━━━━━━\n";
+        Object.entries(user.battleSkills).forEach(([skill, level]) => {
+          const skillData = this.battleSkills[skill];
+          if (skillData) {
+            msg += `${skillData.name} - Level ${level}/5\n`;
+            if (skillData.damage) msg += `  🗡️ Sát thương: x${skillData.damage}\n`;
+            if (skillData.defense) msg += `  🛡️ Phòng thủ: x${skillData.defense}\n`;
+            if (skillData.speed) msg += `  💨 Tốc độ: x${skillData.speed}\n`;
+            if (skillData.heal) msg += `  ❤️ Hồi phục: ${skillData.heal * 100}%\n`;
+            msg += "\n";
+          }
+        });
+        
+        msg += `⚡ Năng lượng: ${user.battleEnergy}/100\n`;
+        msg += "💡 Kỹ năng tăng ngẫu nhiên khi thắng trận!";
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "stats") {
+        let msg = "📊 𝗧𝗛𝗢̂́𝗡𝗚 𝗞𝗘̂ 𝗖𝗛𝗜𝗘̂́𝗡 Đ𝗔̂́𝗨\n━━━━━━━━━━━━━━━━━━━━\n";
+        msg += `🏟️ Đấu trường: ${user.battleWins.arena || 0} thắng\n`;
+        msg += `🏆 Giải đấu: ${user.battleWins.tournament || 0} thắng\n`;
+        msg += `⚔️ Chiến tranh clan: ${user.battleWins.clanwar || 0} thắng\n`;
+        msg += `💥 Thách đấu: ${user.battleWins.challenge || 0} thắng\n\n`;
+        
+        const totalWins = Object.values(user.battleWins).reduce((a, b) => a + b, 0);
+        msg += `🏅 Tổng thắng: ${totalWins}\n`;
+        msg += `⚡ Năng lượng: ${user.battleEnergy}/100`;
+        
+        return api.sendMessage(msg, threadID, messageID);
       }
     }
 
@@ -856,6 +1425,17 @@ module.exports = class {
     }
     
     user.exp += gain;
+    
+    // Energy regeneration system (1 energy per 5 minutes of activity)
+    const now = Date.now();
+    if (!user.lastEnergyRegen) user.lastEnergyRegen = now;
+    const timeSinceRegen = now - user.lastEnergyRegen;
+    
+    if (timeSinceRegen >= 300000 && user.battleEnergy < 100) { // 5 minutes
+      user.battleEnergy = Math.min(100, user.battleEnergy + 1);
+      user.lastEnergyRegen = now;
+    }
+    
     this.saveAllData(data);
   }
 
