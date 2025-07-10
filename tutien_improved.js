@@ -93,6 +93,49 @@ module.exports = class {
     legendary: { name: "Truyền Thuyết", chance: 0.01, bonus: 3 }
   };
 
+  static titles = {
+    // Realm titles
+    "🌱 Tu Luyện Sinh": { req: "realm", value: "Luyện Khí", desc: "Đạt cảnh giới Luyện Khí" },
+    "⚡ Lôi Kiếp Chủ": { req: "realm", value: "Độ Kiếp", desc: "Đạt cảnh giới Độ Kiếp" },
+    "🌟 Phi Thăng Tiên": { req: "realm", value: "Phi Thăng", desc: "Đạt cảnh giới Phi Thăng" },
+    
+    // PvP titles
+    "⚔️ Chiến Binh": { req: "pvpWins", value: 5, desc: "Thắng 5 trận PvP" },
+    "🏆 Võ Lâm Minh Chủ": { req: "pvpWins", value: 20, desc: "Thắng 20 trận PvP" },
+    "👑 Thiên Hạ Đệ Nhất": { req: "pvpWins", value: 50, desc: "Thắng 50 trận PvP" },
+    
+    // Pet titles
+    "🐾 Thú Chủ": { req: "petCount", value: 5, desc: "Sở hữu 5 pet" },
+    "🦄 Linh Thú Sư": { req: "petCount", value: 10, desc: "Sở hữu 10 pet" },
+    "🟡 Truyền Thuyết Sư": { req: "petRarity", value: "legendary", desc: "Sở hữu pet Truyền Thuyết" },
+    
+    // Breakthrough titles
+    "💥 Độ Kiếp Vương": { req: "dokiepCount", value: 10, desc: "Độ kiếp thành công 10 lần" },
+    "🌈 Thiên Kiếp Chủ": { req: "dokiepCount", value: 25, desc: "Độ kiếp thành công 25 lần" },
+    
+    // Training titles
+    "🧘 Khổ Hạnh Tăng": { req: "trainCount", value: 100, desc: "Train 100 lần" },
+    "⭐ Tu Luyện Cuồng": { req: "trainCount", value: 500, desc: "Train 500 lần" },
+    
+    // Boss titles
+    "🐉 Đồ Long Giả": { req: "bossDamage", value: 10000, desc: "Gây 10,000 sát thương boss" },
+    "🔥 Diệt Thế Ma Vương": { req: "bossDamage", value: 50000, desc: "Gây 50,000 sát thương boss" },
+    
+    // Clan titles
+    "🏯 Bang Chủ": { req: "clanRole", value: "leader", desc: "Là bang chủ của clan" },
+    "🎯 Công Thần": { req: "clanContribution", value: 1000, desc: "Đóng góp 1,000 cho clan" },
+    
+    // Wealth titles
+    "💎 Đại Phú Hào": { req: "linhThach", value: 1000, desc: "Sở hữu 1,000 Linh Thạch" },
+    "💰 Tài Phiệt": { req: "linhThach", value: 5000, desc: "Sở hữu 5,000 Linh Thạch" },
+    
+    // Special titles
+    "🔄 Tái Sinh Giả": { req: "rebirthCount", value: 1, desc: "Tái sinh 1 lần" },
+    "♾️ Bất Tử": { req: "rebirthCount", value: 5, desc: "Tái sinh 5 lần" },
+    "🎭 Ẩn Danh Nhân": { req: "special", value: "hide", desc: "Luôn ẩn thông tin" },
+    "🌟 Thiên Tài": { req: "special", value: "allMax", desc: "Đạt tất cả cảnh giới tối đa" }
+  };
+
   // Pet helper functions
   static getRandomPet() {
     const roll = Math.random();
@@ -120,6 +163,75 @@ module.exports = class {
       }
     }
     return 1;
+  }
+
+  // Title helper functions
+  static checkTitleRequirement(user, titleData) {
+    switch (titleData.req) {
+      case "realm":
+        return user.realm === titleData.value;
+      case "pvpWins":
+        return (user.pvpWins || 0) >= titleData.value;
+      case "petCount":
+        return (user.petInventory?.length || 0) >= titleData.value;
+      case "petRarity":
+        if (!user.petInventory) return false;
+        for (const pet of user.petInventory) {
+          for (const [rarity, pets] of Object.entries(this.petList)) {
+            if (pets.includes(pet) && rarity === titleData.value) {
+              return true;
+            }
+          }
+        }
+        return false;
+      case "dokiepCount":
+        return (user.dokiepCount || 0) >= titleData.value;
+      case "trainCount":
+        return (user.trainCount || 0) >= titleData.value;
+      case "bossDamage":
+        return (user.bossDamage || 0) >= titleData.value;
+      case "clanRole":
+        return user.clanRole === titleData.value;
+      case "clanContribution":
+        return (user.clanContribution || 0) >= titleData.value;
+      case "linhThach":
+        return (user.linhThach || 0) >= titleData.value;
+      case "rebirthCount":
+        return (user.rebirthCount || 0) >= titleData.value;
+      case "special":
+        if (titleData.value === "hide") return user.hideInfo;
+        if (titleData.value === "allMax") return user.realm === "Phi Thăng" && (user.rebirthCount || 0) > 0;
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  static getAvailableTitles(user) {
+    const available = [];
+    for (const [title, data] of Object.entries(this.titles)) {
+      if (this.checkTitleRequirement(user, data)) {
+        available.push(title);
+      }
+    }
+    return available;
+  }
+
+  static getHighestTitle(user) {
+    const available = this.getAvailableTitles(user);
+    if (available.length === 0) return null;
+    
+    // Priority order for automatic title selection
+    const priorities = [
+      "🌟 Thiên Tài", "♾️ Bất Tử", "👑 Thiên Hạ Đệ Nhất", "🌟 Phi Thăng Tiên",
+      "🏆 Võ Lâm Minh Chủ", "🟡 Truyền Thuyết Sư", "🔥 Diệt Thế Ma Vương", "🌈 Thiên Kiếp Chủ"
+    ];
+    
+    for (const priority of priorities) {
+      if (available.includes(priority)) return priority;
+    }
+    
+    return available[available.length - 1]; // Return last available
   }
 
   // Data management functions
@@ -239,7 +351,9 @@ module.exports = class {
         petInventory: [],
         petEquipped: null,
         lastClanActivity: 0,
-        lastDungeon: 0
+        lastDungeon: 0,
+        availableTitles: [],
+        equippedTitle: null
       };
     }
 
@@ -247,13 +361,29 @@ module.exports = class {
     user.name = fbName;
     const cmd = args[0]?.toLowerCase();
 
+    // Auto-update titles
+    const updateTitles = () => {
+      const newTitles = this.getAvailableTitles(user);
+      const gained = newTitles.filter(t => !user.availableTitles.includes(t));
+      user.availableTitles = newTitles;
+      
+      if (gained.length > 0) {
+        // Auto-equip highest priority title if no title equipped
+        if (!user.equippedTitle && newTitles.length > 0) {
+          user.equippedTitle = this.getHighestTitle(user);
+        }
+        return gained;
+      }
+      return [];
+    };
+
     if (!cmd) {
       const msg = `📜 𝗧𝗨 𝗧𝗜Ê𝗡 𝗠𝗘𝗡𝗨 𝗩𝟳.𝟬\n━━━━━━━━━━━━━━━━\n` +
         `🌱 Tu luyện: train | dokiep | quest | dungeon | info\n` +
         `🎮 Khác: pvp <@tag> | boss | phai | artifact | event\n` +
         `🏯 Bang hội: clan | cjoin | cleave | cinfo | cupgrade\n` +
         `🛍️ Vật phẩm: shop | buy <mã> | use <mã> | inv\n` +
-        `⚙️ Hệ thống: top | clantop | hide | pet | rebirth`;
+        `⚙️ Hệ thống: top | clantop | hide | pet | title | rebirth`;
       return api.sendMessage(msg, threadID, messageID);
     }
 
@@ -300,12 +430,20 @@ module.exports = class {
         user.dailyQuest.progress++;
       }
 
+      // Check for new titles
+      const gainedTitles = updateTitles();
+      
       this.saveAllData(data);
       this.saveClanData(clanData);
       
       let msg = `🧘 Bạn nhận được ${exp} EXP`;
       if (user.petEquipped) msg += ` (🐾 Pet bonus)`;
       if (user.clan) msg += ` (🏯 Clan bonus)`;
+      
+      if (gainedTitles.length > 0) {
+        msg += `\n🎉 Danh hiệu mới: ${gainedTitles.join(", ")}`;
+      }
+      
       return api.sendMessage(msg + ".", threadID, messageID);
     }
 
@@ -361,9 +499,18 @@ module.exports = class {
           clanData[user.clan].totalContribution = (clanData[user.clan].totalContribution || 0) + 50;
         }
         
+        // Check for new titles
+        const gainedTitles = updateTitles();
+        
         this.saveAllData(data);
         this.saveClanData(clanData);
-        return api.sendMessage(`🌟 Độ kiếp thành công! Cảnh giới mới: ${next}`, threadID, messageID);
+        
+        let msg = `🌟 Độ kiếp thành công! Cảnh giới mới: ${next}`;
+        if (gainedTitles.length > 0) {
+          msg += `\n🎉 Danh hiệu mới: ${gainedTitles.join(", ")}`;
+        }
+        
+        return api.sendMessage(msg, threadID, messageID);
       } else {
         if (user.items.danphuc) {
           user.items.danphuc--;
@@ -394,7 +541,9 @@ module.exports = class {
         return api.sendMessage("🔒 Người này đang ẩn thông tin tu luyện.", threadID, messageID);
       }
       
-      let msg = `👤 ${target.name}\n🌟 Cảnh giới: ${target.realm}\n✨ EXP: ${target.exp}\n💎 Linh Thạch: ${target.linhThach}\n💪 Thể chất: ${target.theChat}`;
+      let msg = `👤 ${target.name}`;
+      if (target.equippedTitle) msg += ` [${target.equippedTitle}]`;
+      msg += `\n🌟 Cảnh giới: ${target.realm}\n✨ EXP: ${target.exp}\n💎 Linh Thạch: ${target.linhThach}\n💪 Thể chất: ${target.theChat}`;
       
       if (target.faction) msg += `\n☯️ Phái: ${this.factions[target.faction]}`;
       
@@ -636,7 +785,15 @@ module.exports = class {
         user.petInventory = user.petInventory || [];
         user.petInventory.push(petResult.pet);
         this.saveAllData(data);
-        return api.sendMessage(`� Đã mở ${this.items[code].name}!\n🐾 Bạn nhận được: ${petResult.pet}\n⭐ Độ hiếm: ${petResult.rarityName}`, threadID, messageID);
+        // Check for new titles after getting pet
+        const gainedTitles = updateTitles();
+        
+        let msg = `🎁 Đã mở ${this.items[code].name}!\n🐾 Bạn nhận được: ${petResult.pet}\n⭐ Độ hiếm: ${petResult.rarityName}`;
+        if (gainedTitles.length > 0) {
+          msg += `\n🎉 Danh hiệu mới: ${gainedTitles.join(", ")}`;
+        }
+        
+        return api.sendMessage(msg, threadID, messageID);
       }
       if (code === "clanbuff" && user.clan) {
         const clan = clanData[user.clan];
@@ -730,6 +887,95 @@ module.exports = class {
       }
     }
 
+    // Title system
+    if (cmd === "title") {
+      const sub = args[1]?.toLowerCase();
+      
+      if (!sub) {
+        updateTitles(); // Update available titles
+        
+        let msg = `🏆 𝗛𝗘̂̀ 𝗧𝗛𝗢̂́𝗡𝗚 𝗗𝗔𝗡𝗛 𝗛𝗜𝗘̣̂𝗨\n━━━━━━━━━━━━━━━━\n`;
+        if (user.equippedTitle) {
+          msg += `🎖️ Danh hiệu hiện tại: ${user.equippedTitle}\n\n`;
+        } else {
+          msg += `🎖️ Chưa trang bị danh hiệu\n\n`;
+        }
+        
+        msg += `📋 Dùng: title list | title equip <tên> | title remove\n`;
+        msg += `📖 Xem tất cả: title all`;
+        
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "list") {
+        updateTitles();
+        
+        if (user.availableTitles.length === 0) {
+          return api.sendMessage("🏆 Bạn chưa có danh hiệu nào!\nHãy tu luyện và hoàn thành thành tích để mở khóa danh hiệu.", threadID, messageID);
+        }
+        
+        let msg = `🏆 𝗗𝗔𝗡𝗛 𝗛𝗜𝗘̣̂𝗨 𝗖𝗢́ 𝗦𝗔̆̃𝗡\n━━━━━━━━━━━━━━━━\n`;
+        user.availableTitles.forEach((title, i) => {
+          const isEquipped = title === user.equippedTitle ? " ✅" : "";
+          msg += `${i + 1}. ${title}${isEquipped}\n`;
+          msg += `   ${this.titles[title].desc}\n\n`;
+        });
+        
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "equip") {
+        const titleName = args.slice(2).join(" ");
+        if (!titleName) return api.sendMessage("❌ Dùng: title equip <tên danh hiệu>", threadID, messageID);
+        
+        updateTitles();
+        
+        if (!user.availableTitles.includes(titleName)) {
+          return api.sendMessage("❌ Bạn không sở hữu danh hiệu này!", threadID, messageID);
+        }
+        
+        user.equippedTitle = titleName;
+        this.saveAllData(data);
+        return api.sendMessage(`🎖️ Đã trang bị danh hiệu: ${titleName}`, threadID, messageID);
+      }
+      
+      if (sub === "remove") {
+        if (!user.equippedTitle) {
+          return api.sendMessage("❌ Bạn chưa trang bị danh hiệu nào!", threadID, messageID);
+        }
+        
+        user.equippedTitle = null;
+        this.saveAllData(data);
+        return api.sendMessage("🎖️ Đã gỡ danh hiệu.", threadID, messageID);
+      }
+      
+      if (sub === "all") {
+        let msg = `🏆 𝗧𝗔̂́𝗧 𝗖𝗔̉ 𝗗𝗔𝗡𝗛 𝗛𝗜𝗘̣̂𝗨\n━━━━━━━━━━━━━━━━\n`;
+        
+        const categories = {
+          "🌟 Cảnh Giới": ["🌱 Tu Luyện Sinh", "⚡ Lôi Kiếp Chủ", "🌟 Phi Thăng Tiên"],
+          "⚔️ PvP": ["⚔️ Chiến Binh", "🏆 Võ Lâm Minh Chủ", "👑 Thiên Hạ Đệ Nhất"],
+          "🐾 Pet": ["🐾 Thú Chủ", "🦄 Linh Thú Sư", "🟡 Truyền Thuyết Sư"],
+          "💥 Độ Kiếp": ["💥 Độ Kiếp Vương", "🌈 Thiên Kiếp Chủ"],
+          "🧘 Tu Luyện": ["🧘 Khổ Hạnh Tăng", "⭐ Tu Luyện Cuồng"],
+          "🐉 Boss": ["🐉 Đồ Long Giả", "🔥 Diệt Thế Ma Vương"],
+          "🏯 Clan": ["🏯 Bang Chủ", "🎯 Công Thần"],
+          "💰 Tài Sản": ["💎 Đại Phú Hào", "💰 Tài Phiệt"],
+          "🌟 Đặc Biệt": ["🔄 Tái Sinh Giả", "♾️ Bất Tử", "🎭 Ẩn Danh Nhân", "🌟 Thiên Tài"]
+        };
+        
+        for (const [category, titles] of Object.entries(categories)) {
+          msg += `\n${category}:\n`;
+          titles.forEach(title => {
+            const hasTitle = user.availableTitles?.includes(title) ? "✅" : "❌";
+            msg += `${hasTitle} ${title}\n  ${this.titles[title].desc}\n`;
+          });
+        }
+        
+        return api.sendMessage(msg, threadID, messageID);
+      }
+    }
+
     // Enhanced PvP system
     if (cmd === "pvp") {
       const now = Date.now();
@@ -789,6 +1035,12 @@ module.exports = class {
         resultMsg = `🤝 Hòa với ${target.name}! Cả hai nhận ${expGain} EXP.`;
         user.exp += expGain;
         target.exp += expGain;
+      }
+
+      // Check for new titles
+      const gainedTitles = updateTitles();
+      if (gainedTitles.length > 0) {
+        resultMsg += `\n🎉 Danh hiệu mới: ${gainedTitles.join(", ")}`;
       }
 
       user.pvpCooldown = now;
@@ -891,8 +1143,10 @@ module.exports = class {
         .slice(0, 10);
       let msg = "🏆 𝗧𝗢𝗣 𝗧𝗨 𝗧𝗜Ê𝗡\n━━━━━━━━━━━━\n";
       top.forEach((u, i) => {
-        const clan = u.clan ? ` [${u.clan}]` : "";
-        msg += `${i + 1}. ${u.name}${clan}\n🌟 ${u.realm} | ✨ ${u.exp} EXP\n\n`;
+        let name = u.name;
+        if (u.equippedTitle) name = `${u.name} [${u.equippedTitle}]`;
+        const clan = u.clan ? ` {${u.clan}}` : "";
+        msg += `${i + 1}. ${name}${clan}\n🌟 ${u.realm} | ✨ ${u.exp} EXP\n\n`;
       });
       return api.sendMessage(msg, threadID, messageID);
     }
@@ -970,6 +1224,12 @@ module.exports = class {
         });
       }
 
+      // Check for new titles after boss damage
+      const gainedTitles = updateTitles();
+      if (gainedTitles.length > 0) {
+        msg += `\n🎉 Danh hiệu mới: ${gainedTitles.join(", ")}`;
+      }
+
       this.saveBossData(boss);
       this.saveAllData(data);
       return api.sendMessage(msg, threadID, messageID);
@@ -986,8 +1246,17 @@ module.exports = class {
       user.linhThach += 100;
       user.rebirthCount = (user.rebirthCount || 0) + 1;
       
+      // Check for new titles after rebirth
+      const gainedTitles = updateTitles();
+      
       this.saveAllData(data);
-      return api.sendMessage(`🔄 Tái sinh thành công! Lần ${user.rebirthCount}\n+50 Thể chất +100 Linh Thạch`, threadID, messageID);
+      
+      let msg = `🔄 Tái sinh thành công! Lần ${user.rebirthCount}\n+50 Thể chất +100 Linh Thạch`;
+      if (gainedTitles.length > 0) {
+        msg += `\n🎉 Danh hiệu mới: ${gainedTitles.join(", ")}`;
+      }
+      
+      return api.sendMessage(msg, threadID, messageID);
     }
 
     return api.sendMessage("❓ Lệnh không hợp lệ. Gõ `.tutien` để xem menu.", threadID, messageID);
