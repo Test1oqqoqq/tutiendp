@@ -89,6 +89,10 @@ function levenshtein(a, b) {
     return dp[a.length][b.length];
 }
 
+function formatNumber(number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 module.exports = class {
     static config = {
         name: "poker",
@@ -115,7 +119,7 @@ module.exports = class {
             return api.sendMessage(
                 `♠️ POKER TEXAS HOLD'EM ♠️
 
-» poker create <coins>: Tạo bàn chơi (bắt buộc nhập số coins)
+» poker create <money>: Tạo bàn chơi (bắt buộc nhập số tiền)
 » poker join: Tham gia bàn
 » poker leave: Rời bàn
 » poker start: Bắt đầu ván
@@ -149,12 +153,12 @@ module.exports = class {
             if (alivePlayers.length === 1) {
                 const winner = alivePlayers[0];
                 const prizePot = gameData.pot || 0;
-                const totalBet = (gameData.coins || 0) * gameData.players.length;
+                const totalBet = (gameData.money || 0) * gameData.players.length;
                 const totalPrize = prizePot + totalBet;
                 const winnerName = await Users.getNameUser(winner.id);
 
                 await api.sendMessage(
-                    `🏆 Tất cả đã bỏ bài, chỉ còn ${winnerName}!\n${winnerName} thắng toàn bộ pot + tiền cược bàn: +${totalPrize} coins!`,
+                    `🏆 Tất cả đã bỏ bài, chỉ còn ${winnerName}!\n${winnerName} thắng toàn bộ pot + tiền cược bàn: +${formatNumber(totalPrize)}$!`,
                     threadID
                 );
                 await Currencies.increaseMoney(winner.id, totalPrize);
@@ -221,7 +225,7 @@ module.exports = class {
                     for (const player of gameData.players) {
                         resultMsg += `\n${await Users.getNameUser(player.id)}: ${player.hand[0].Icon}${player.hand[0].Value} | ${player.hand[1].Icon}${player.hand[1].Value}${player.folded ? " (Đã bỏ bài)" : ""}`;
                     }
-                    resultMsg += `\n\n🏆 Người thắng: ${winners.map(w => w.name).join(", ")} (+${prize} coins)`;
+                    resultMsg += `\n\n🏆 Người thắng: ${winners.map(w => w.name).join(", ")} (+${formatNumber(prize)}$)`;
                     await api.sendMessage(resultMsg, threadID);
 
                     for (const w of winners) {
@@ -262,13 +266,14 @@ module.exports = class {
             case "create": {
                 if (global.moduleData.poker.has(threadID))
                     return api.sendMessage("⚠️ Nhóm này đã có bàn Poker!", threadID, messageID);
-                const coins = parseInt(args[1]);
-                if (isNaN(coins) || coins < 1)
-                    return api.sendMessage("⚠️ Bạn phải nhập số coins tối thiểu!", threadID, messageID);
-                const userData = await Currencies.getData(senderID);
-                const userMoney = userData && typeof userData.money === "number" ? userData.money : 0;
-                if (userMoney < coins)
-                    return api.sendMessage(`⚠️ Bạn không đủ ${coins} coins để tạo bàn!`, threadID, messageID);
+                const money = parseInt(args[1]);
+                if (isNaN(money) || money < 1)
+                    return api.sendMessage("⚠️ Bạn phải nhập số tiền tối thiểu!", threadID, messageID);
+                
+                // Sử dụng hệ thống money đúng như money command của bạn
+                const userMoney = (await Currencies.getData(senderID)).money || 0;
+                if (userMoney < money)
+                    return api.sendMessage(`⚠️ Bạn không đủ ${formatNumber(money)}$ để tạo bàn! (Bạn có: ${formatNumber(userMoney)}$)`, threadID, messageID);
 
                 let isFriend = false;
                 try {
@@ -316,7 +321,7 @@ module.exports = class {
                     } catch (e) {}
                 }
 
-                await Currencies.decreaseMoney(senderID, coins);
+                await Currencies.decreaseMoney(senderID, money);
                 global.moduleData.poker.set(threadID, {
                     author: senderID,
                     started: false,
@@ -327,10 +332,10 @@ module.exports = class {
                     flop: false,
                     turn: false,
                     river: false,
-                    coins,
+                    money,
                     pot: 0
                 });
-                return api.sendMessage(`♠️ Bàn Poker đã được tạo với cược ${coins} coins/người! Dùng 'poker join' để tham gia.`, threadID, messageID);
+                return api.sendMessage(`♠️ Bàn Poker đã được tạo với cược ${formatNumber(money)}$/người! Dùng 'poker join' để tham gia.`, threadID, messageID);
             }
 
             case "join": {
@@ -340,10 +345,11 @@ module.exports = class {
                     return api.sendMessage("⚠️ Bàn đã bắt đầu, không thể tham gia!", threadID, messageID);
                 if (gameData.players.some(p => p.id === senderID))
                     return api.sendMessage("⚠️ Bạn đã tham gia rồi!", threadID, messageID);
-                const userData = await Currencies.getData(senderID);
-                const userMoney = userData && typeof userData.money === "number" ? userData.money : 0;
-                if (userMoney < gameData.coins)
-                    return api.sendMessage(`⚠️ Bạn không đủ ${gameData.coins} coins để tham gia!`, threadID, messageID);
+                
+                // Sử dụng hệ thống money đúng như money command của bạn
+                const userMoney = (await Currencies.getData(senderID)).money || 0;
+                if (userMoney < gameData.money)
+                    return api.sendMessage(`⚠️ Bạn không đủ ${formatNumber(gameData.money)}$ để tham gia! (Bạn có: ${formatNumber(userMoney)}$)`, threadID, messageID);
 
                 const playerName = await Users.getNameUser(senderID);
 
@@ -399,7 +405,7 @@ module.exports = class {
                     );
                 }
 
-                await Currencies.decreaseMoney(senderID, gameData.coins);
+                await Currencies.decreaseMoney(senderID, gameData.money);
                 gameData.players.push({ id: senderID, groupID: null, hand: [], folded: false, bet: 0 });
                 global.moduleData.poker.set(threadID, gameData);
                 return api.sendMessage(`✅ ${playerName} đã tham gia bàn Poker!`, threadID, messageID);
@@ -429,13 +435,13 @@ module.exports = class {
 
 3. *Các hành động trong mỗi vòng cược:*
 - *check:* Không tố thêm, chỉ khi chưa ai tố.
-- *call:* Theo số coins đã tố trước đó.
-- *raise <số coins>:* Tố thêm số coins (phải lớn hơn số đã tố trước đó).
-- *raise all:* Tố toàn bộ số coins bạn còn lại (all-in).
+- *call:* Theo số tiền đã tố trước đó.
+- *raise <số tiền>:* Tố thêm số tiền (phải lớn hơn số đã tố trước đó).
+- *raise all:* Tố toàn bộ số tiền bạn còn lại (all-in).
 - *fold:* Bỏ bài, không chơi tiếp ván đó.
 
 4. *Cách chơi trên bot:*
-- Tạo bàn: poker create <coins>
+- Tạo bàn: poker create <money>
 - Tham gia: poker join
 - Rời bàn: poker leave
 - Bắt đầu: poker start
@@ -475,6 +481,7 @@ module.exports = class {
                     `♠️ THÔNG TIN BÀN POKER ♠️
 » Chủ bàn: ${authorName}
 » Số người chơi: ${gameData.players.length}
+» Cược: ${formatNumber(gameData.money)}$/người
 » Trạng thái: ${gameData.started ? "Đã bắt đầu" : "Chưa bắt đầu"}
 » Người chơi:\n${playerNames.map((name, i) => `${i+1}. ${name}`).join("\n")}`,
                     threadID, messageID
@@ -697,16 +704,15 @@ module.exports = class {
                 if (action === "raise") {
                     let raiseAmount;
                     if ((args[2] && args[2].toLowerCase() === "all") || (args[1] && args[1].toLowerCase() === "all")) {
-                        // raise all: tố toàn bộ số coins còn lại
-                        const userData = await Currencies.getData(senderID);
-                        const userMoney = userData && typeof userData.money === "number" ? userData.money : 0;
+                        // raise all: tố toàn bộ số tiền còn lại
+                        const userMoney = (await Currencies.getData(senderID)).money || 0;
                         raiseAmount = userMoney;
                         if (raiseAmount <= 0)
-                            return api.sendMessage(`${playerName} không còn coins để all-in!`, threadID, messageID);
+                            return api.sendMessage(`${playerName} không còn tiền để all-in!`, threadID, messageID);
                     } else {
                         raiseAmount = parseInt(args[2]);
                         if (isNaN(raiseAmount) || raiseAmount < 10)
-                            return api.sendMessage(`${playerName} phải tố (raise) ít nhất 10 coins hoặc dùng 'raise all'!`, threadID, messageID);
+                            return api.sendMessage(`${playerName} phải tố (raise) ít nhất 10$ hoặc dùng 'raise all'!`, threadID, messageID);
                     }
 
                     // Số tiền cần bỏ thêm để raise = (currentBet - player.bet) + raiseAmount
@@ -714,7 +720,7 @@ module.exports = class {
 
                     // Kiểm tra raise phải lớn hơn currentBet
                     if (raiseAmount <= (gameData.currentBet || 0))
-                        return api.sendMessage(`${playerName} phải tố số coins lớn hơn số đã tố trước đó (${gameData.currentBet || 0})!`, threadID, messageID);
+                        return api.sendMessage(`${playerName} phải tố số tiền lớn hơn số đã tố trước đó (${formatNumber(gameData.currentBet || 0)}$)!`, threadID, messageID);
 
                     // Cho phép âm tiền nếu không đủ
                     await Currencies.decreaseMoney(senderID, needToAdd);
@@ -722,7 +728,7 @@ module.exports = class {
                     player.bet = (player.bet || 0) + needToAdd;
                     gameData.currentBet = player.bet;
                     player.acted = true;
-                    await api.sendMessage(`${playerName} đã tố (raise) ${raiseAmount} coins!`, threadID, messageID);
+                    await api.sendMessage(`${playerName} đã tố (raise) ${formatNumber(raiseAmount)}$!`, threadID, messageID);
 
                     for (const p of gameData.players) {
                         if (p.id !== senderID && !p.folded) p.acted = false;
@@ -744,10 +750,10 @@ module.exports = class {
                     gameData.pot = (gameData.pot || 0) + needToCall;
                     player.bet = (player.bet || 0) + needToCall;
                     player.acted = true;
-                    await api.sendMessage(`${playerName} đã theo (call) ${needToCall} coins!`, threadID, messageID);
+                    await api.sendMessage(`${playerName} đã theo (call) ${formatNumber(needToCall)}$!`, threadID, messageID);
                 } else if (action === "check") {
                     if (gameData.currentBet > player.bet)
-                        return api.sendMessage(`${playerName} không thể check khi chưa theo đủ số coins đã tố!`, threadID, messageID);
+                        return api.sendMessage(`${playerName} không thể check khi chưa theo đủ số tiền đã tố!`, threadID, messageID);
                     player.acted = true;
                     await api.sendMessage(`${playerName} đã chọn: CHECK`, threadID, messageID);
                 } else if (action === "fold") {
@@ -787,4 +793,4 @@ module.exports = class {
     static async onReply({ api, event, Users, Currencies }) {
         // Logic for onReply - xử lý khi có reply
     }
-}
+};
