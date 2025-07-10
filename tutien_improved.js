@@ -69,19 +69,19 @@ module.exports = class {
 
   static petList = {
     common: [
-      "⚪ 🐶 Chó Nhỏ", "⚪ 🐱 Mèo Mun", "⚪ 🦊 Cáo", "⚪ � Thỏ", "⚪ � Chim Sẻ"
+      "⚪ 🐶 Chó Nhỏ", "⚪ 🐱 Mèo Mun", "⚪ 🦊 Cáo", "⚪ 🐰 Thỏ", "⚪ 🐦 Chim Sẻ"
     ],
     uncommon: [
-      "⚪ 🐯 Hổ Nhỏ", "⚪ 🐵 Khỉ Thông Minh", "⚪ 🦅 Ưng Lửa", "⚪ 🐍 Xà Tinh", "⚪ 🐺 Sói Trắng"
+      "🟢 🐯 Hổ Nhỏ", "🟢 🐵 Khỉ Thông Minh", "🟢 🦅 Ưng Lửa", "🟢 🐍 Xà Tinh", "🟢 🐺 Sói Trắng"
     ],
     rare: [
-      "⚪ 🐲 Rồng Con", "⚪ � Kỳ Lân", "⚪ � Khủng Long", "⚪ 👻 Bóng Ma", "⚪ 🦂 Bọ Cạp Lửa"
+      "🔵 🐲 Rồng Con", "🔵 🦄 Kỳ Lân", "🔵 🦖 Khủng Long", "🔵 👻 Bóng Ma", "🔵 🦂 Bọ Cạp Lửa"
     ],
     epic: [
-      "⚪ 🐺 Sói Băng", "⚪ 🐉 Long Linh", "⚪ 🧚 Tiên Linh", "⚪ 💀 Lich", "⚪ 🔥 Phượng Hoàng"
+      "🟣 🐺 Sói Băng", "🟣 🐉 Long Linh", "🟣 🧚 Tiên Linh", "🟣 💀 Lich", "🟣 🔥 Phượng Hoàng"
     ],
     legendary: [
-      "⚪ 🌪️ Rồng Gió", "⚪ ⚡ Rồng Sấm", "⚪ 🌌 Rồng Vũ Trụ", "⚪ 🌟 Thần Long", "⚪ 👑 Hoàng Gia Kỳ Lân"
+      "🟡 🌪️ Rồng Gió", "🟡 ⚡ Rồng Sấm", "🟡 🌌 Rồng Vũ Trụ", "🟡 🌟 Thần Long", "🟡 👑 Hoàng Gia Kỳ Lân"
     ]
   };
 

@@ -2,16 +2,16 @@
 
 ## 🐾 Hệ Thống Pet Mới
 
-### 🌟 Phân Loại Pet Theo Độ Hiếm
-- **⚪ Bình Thường** (50% tỉ lệ) - Bonus +0% EXP/Phần thưởng
-- **⚪ Không Phổ Biến** (30% tỉ lệ) - Bonus +20% EXP/Phần thưởng  
-- **⚪ Hiếm** (15% tỉ lệ) - Bonus +50% EXP/Phần thưởng
-- **⚪ Sử Thi** (4% tỉ lệ) - Bonus +100% EXP/Phần thưởng
-- **⚪ Truyền Thuyết** (1% tỉ lệ) - Bonus +200% EXP/Phần thưởng
+### 🌟 Phân Loại Pet Theo Độ Hiếm & Màu Sắc
+- **⚪ Bình Thường** (50% tỉ lệ) - Bonus +0% EXP/Phần thưởng - Màu Trắng
+- **🟢 Không Phổ Biến** (30% tỉ lệ) - Bonus +20% EXP/Phần thưởng - Màu Xanh Lá
+- **🔵 Hiếm** (15% tỉ lệ) - Bonus +50% EXP/Phần thưởng - Màu Xanh Dương
+- **🟣 Sử Thi** (4% tỉ lệ) - Bonus +100% EXP/Phần thưởng - Màu Tím
+- **🟡 Truyền Thuyết** (1% tỉ lệ) - Bonus +200% EXP/Phần thưởng - Màu Vàng
 
 ### 🎁 Pet Box Cải Tiến
 - Mở rương pet hiện hiển thị độ hiếm của pet nhận được
-- Thông báo chi tiết: "🎁 Đã mở Rương Pet! 🐾 Bạn nhận được: ⚪ 🌟 Thần Long ⭐ Độ hiếm: Truyền Thuyết"
+- Thông báo chi tiết: "🎁 Đã mở Rương Pet! 🐾 Bạn nhận được: 🟡 🌟 Thần Long ⭐ Độ hiếm: Truyền Thuyết"
 
 ### 🔧 Tính Năng Pet Mới
 - `pet inv` - Xem kho pet với thông tin độ hiếm
