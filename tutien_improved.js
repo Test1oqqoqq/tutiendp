@@ -67,12 +67,60 @@ module.exports = class {
     { name: "Thiên Ma Đế Quân", hp: 150000, type: "clan" }
   ];
 
-  static petList = [
-    "🐶 Chó Nhỏ", "🐱 Mèo Mun", "🦊 Cáo", "🐯 Hổ Nhỏ", "🐲 Rồng Con",
-    "🦄 Kỳ Lân", "🐵 Khỉ Thông Minh", "🦅 Ưng Lửa", "🐍 Xà Tinh", "🦖 Khủng Long",
-    "👻 Bóng Ma", "🦂 Bọ Cạp Lửa", "🐺 Sói Băng", "🐉 Long Linh", "🧚 Tiên Linh",
-    "💀 Lich", "🔥 Phượng Hoàng", "🌪️ Rồng Gió", "⚡ Rồng Sấm", "🌌 Rồng Vũ Trụ"
-  ];
+  static petList = {
+    common: [
+      "⚪ 🐶 Chó Nhỏ", "⚪ 🐱 Mèo Mun", "⚪ 🦊 Cáo", "⚪ � Thỏ", "⚪ � Chim Sẻ"
+    ],
+    uncommon: [
+      "⚪ 🐯 Hổ Nhỏ", "⚪ 🐵 Khỉ Thông Minh", "⚪ 🦅 Ưng Lửa", "⚪ 🐍 Xà Tinh", "⚪ 🐺 Sói Trắng"
+    ],
+    rare: [
+      "⚪ 🐲 Rồng Con", "⚪ � Kỳ Lân", "⚪ � Khủng Long", "⚪ 👻 Bóng Ma", "⚪ 🦂 Bọ Cạp Lửa"
+    ],
+    epic: [
+      "⚪ 🐺 Sói Băng", "⚪ 🐉 Long Linh", "⚪ 🧚 Tiên Linh", "⚪ 💀 Lich", "⚪ 🔥 Phượng Hoàng"
+    ],
+    legendary: [
+      "⚪ 🌪️ Rồng Gió", "⚪ ⚡ Rồng Sấm", "⚪ 🌌 Rồng Vũ Trụ", "⚪ 🌟 Thần Long", "⚪ 👑 Hoàng Gia Kỳ Lân"
+    ]
+  };
+
+  static petRarity = {
+    common: { name: "Bình Thường", chance: 0.5, bonus: 1 },
+    uncommon: { name: "Không Phổ Biến", chance: 0.3, bonus: 1.2 },
+    rare: { name: "Hiếm", chance: 0.15, bonus: 1.5 },
+    epic: { name: "Sử Thi", chance: 0.04, bonus: 2 },
+    legendary: { name: "Truyền Thuyết", chance: 0.01, bonus: 3 }
+  };
+
+  // Pet helper functions
+  static getRandomPet() {
+    const roll = Math.random();
+    let cumulative = 0;
+    
+    for (const [rarity, data] of Object.entries(this.petRarity)) {
+      cumulative += data.chance;
+      if (roll <= cumulative) {
+        const pets = this.petList[rarity];
+        const pet = pets[Math.floor(Math.random() * pets.length)];
+        return { pet, rarity, rarityName: data.name };
+      }
+    }
+    
+    // Fallback to common
+    const pets = this.petList.common;
+    const pet = pets[Math.floor(Math.random() * pets.length)];
+    return { pet, rarity: "common", rarityName: this.petRarity.common.name };
+  }
+
+  static getPetBonus(petName) {
+    for (const [rarity, pets] of Object.entries(this.petList)) {
+      if (pets.includes(petName)) {
+        return this.petRarity[rarity].bonus;
+      }
+    }
+    return 1;
+  }
 
   // Data management functions
   static getAllData() {
@@ -190,7 +238,8 @@ module.exports = class {
         hideInfo: false,
         petInventory: [],
         petEquipped: null,
-        lastClanActivity: 0
+        lastClanActivity: 0,
+        lastDungeon: 0
       };
     }
 
@@ -222,6 +271,12 @@ module.exports = class {
       // Faction bonus
       if (user.faction === "hachan" && user.theChat > 100) exp += 50;
       
+      // Pet bonus
+      if (user.petEquipped) {
+        const petBonus = this.getPetBonus(user.petEquipped);
+        exp = Math.floor(exp * petBonus);
+      }
+      
       // Clan bonus
       if (user.clan && clanData[user.clan]) {
         const clan = clanData[user.clan];
@@ -249,7 +304,8 @@ module.exports = class {
       this.saveClanData(clanData);
       
       let msg = `🧘 Bạn nhận được ${exp} EXP`;
-      if (user.clan) msg += ` (có bonus từ clan ${user.clan})`;
+      if (user.petEquipped) msg += ` (🐾 Pet bonus)`;
+      if (user.clan) msg += ` (🏯 Clan bonus)`;
       return api.sendMessage(msg + ".", threadID, messageID);
     }
 
@@ -348,7 +404,17 @@ module.exports = class {
         msg += `\n🎯 Đóng góp: ${target.clanContribution}`;
       }
       
-      if (target.petEquipped) msg += `\n🐾 Pet: ${target.petEquipped}`;
+      if (target.petEquipped) {
+        // Get pet rarity
+        let rarityInfo = "";
+        for (const [rarity, pets] of Object.entries(this.petList)) {
+          if (pets.includes(target.petEquipped)) {
+            rarityInfo = ` (${this.petRarity[rarity].name})`;
+            break;
+          }
+        }
+        msg += `\n🐾 Pet: ${target.petEquipped}${rarityInfo}`;
+      }
       
       msg += `\n📊 Thống kê: ${target.dokiepCount} độ kiếp | ${target.pvpWins} PvP thắng`;
       
@@ -566,10 +632,11 @@ module.exports = class {
       if (code === "danexp") user.exp += 1000;
       if (code === "thechat") user.theChat += Math.floor(Math.random() * 11) + 10;
       if (code === "petbox") {
-        const pet = this.petList[Math.floor(Math.random() * this.petList.length)];
-        user.petInventory.push(pet);
+        const petResult = this.getRandomPet();
+        user.petInventory = user.petInventory || [];
+        user.petInventory.push(petResult.pet);
         this.saveAllData(data);
-        return api.sendMessage(`🎯 Đã dùng ${this.items[code].name}\n🐾 Bạn nhận được: ${pet}`, threadID, messageID);
+        return api.sendMessage(`� Đã mở ${this.items[code].name}!\n🐾 Bạn nhận được: ${petResult.pet}\n⭐ Độ hiếm: ${petResult.rarityName}`, threadID, messageID);
       }
       if (code === "clanbuff" && user.clan) {
         const clan = clanData[user.clan];
@@ -598,13 +665,38 @@ module.exports = class {
     if (cmd === "pet") {
       const sub = args[1];
       if (!sub) {
-        return api.sendMessage(user.petEquipped ? `🐾 Pet của bạn: ${user.petEquipped}` : "🐾 Bạn chưa có pet, hãy dùng `use petbox` để mở!", threadID, messageID);
+        if (!user.petEquipped) {
+          return api.sendMessage("🐾 Bạn chưa có pet, hãy dùng `use petbox` để mở!\n📋 Dùng: pet inv | pet equip <tên> | pet info", threadID, messageID);
+        }
+        
+        // Get pet rarity
+        let rarityInfo = "";
+        for (const [rarity, pets] of Object.entries(this.petList)) {
+          if (pets.includes(user.petEquipped)) {
+            rarityInfo = ` (${this.petRarity[rarity].name})`;
+            break;
+          }
+        }
+        
+        return api.sendMessage(`🐾 Pet hiện tại: ${user.petEquipped}${rarityInfo}\n📋 Dùng: pet inv | pet equip <tên> | pet info`, threadID, messageID);
       }
       if (sub === "inv") {
         if (!user.petInventory || user.petInventory.length === 0)
           return api.sendMessage("🎒 Bạn chưa có pet nào trong kho!", threadID, messageID);
-        const list = user.petInventory.map((p, i) => `${i + 1}. ${p}`).join("\n");
-        return api.sendMessage(`🎒 Pet trong kho:\n${list}`, threadID, messageID);
+        
+        let msg = "🎒 𝗣𝗘𝗧 𝗧𝗥𝗢𝗡𝗚 𝗞𝗛𝗢\n━━━━━━━━━━━━\n";
+        user.petInventory.forEach((pet, i) => {
+          // Get rarity info
+          let rarityInfo = "";
+          for (const [rarity, pets] of Object.entries(this.petList)) {
+            if (pets.includes(pet)) {
+              rarityInfo = ` (${this.petRarity[rarity].name})`;
+              break;
+            }
+          }
+          msg += `${i + 1}. ${pet}${rarityInfo}\n`;
+        });
+        return api.sendMessage(msg, threadID, messageID);
       }
       if (sub === "equip") {
         const name = args.slice(2).join(" ");
@@ -617,7 +709,24 @@ module.exports = class {
       }
       if (sub === "info") {
         if (!user.petEquipped) return api.sendMessage("🐾 Bạn chưa trang bị pet nào.", threadID, messageID);
-        return api.sendMessage(`📋 Pet đang dùng: ${user.petEquipped}`, threadID, messageID);
+        
+        // Get pet rarity and bonus
+        let rarityInfo = "";
+        let bonusInfo = "";
+        for (const [rarity, pets] of Object.entries(this.petList)) {
+          if (pets.includes(user.petEquipped)) {
+            rarityInfo = this.petRarity[rarity].name;
+            bonusInfo = `${Math.floor((this.petRarity[rarity].bonus - 1) * 100)}%`;
+            break;
+          }
+        }
+        
+        let msg = `🐾 𝗣𝗘𝗧 Đ𝗔𝗡𝗚 𝗧𝗥𝗔𝗡𝗚 𝗕Ị\n━━━━━━━━━━━━\n`;
+        msg += `Pet: ${user.petEquipped}\n`;
+        msg += `⭐ Độ hiếm: ${rarityInfo}\n`;
+        msg += `💫 Bonus: +${bonusInfo} EXP/Phần thưởng`;
+        
+        return api.sendMessage(msg, threadID, messageID);
       }
     }
 
@@ -638,6 +747,16 @@ module.exports = class {
 
       let userPower = this.realms.indexOf(user.realm) * 100 + user.theChat;
       let targetPower = this.realms.indexOf(target.realm) * 100 + target.theChat;
+
+      // Pet bonuses
+      if (user.petEquipped) {
+        const petBonus = this.getPetBonus(user.petEquipped);
+        userPower = Math.floor(userPower * petBonus);
+      }
+      if (target.petEquipped) {
+        const petBonus = this.getPetBonus(target.petEquipped);
+        targetPower = Math.floor(targetPower * petBonus);
+      }
 
       // Clan bonuses
       if (user.clan && clanData[user.clan]) {
@@ -706,8 +825,16 @@ module.exports = class {
       return api.sendMessage(msg, threadID, messageID);
     }
 
-    // Enhanced dungeon system
+    // Enhanced dungeon system with 24h cooldown
     if (cmd === "dungeon") {
+      const now = Date.now();
+      const cooldown = 86400000; // 24 hours
+      
+      if (now - user.lastDungeon < cooldown) {
+        const left = Math.ceil((cooldown - (now - user.lastDungeon)) / 3600000);
+        return api.sendMessage(`⏰ Phải chờ ${left} giờ nữa mới có thể vào dungeon tiếp!`, threadID, messageID);
+      }
+      
       const list = [
         { name: "Hang Nhện", level: 1, reward: 300 },
         { name: "Lâu Đài Bóng Tối", level: 2, reward: 600 },
@@ -722,17 +849,36 @@ module.exports = class {
         successRate += (clanData[user.clan].buildings?.library || 0) * 0.05;
       }
       
+      // Pet bonus
+      if (user.petEquipped) {
+        const petBonus = this.getPetBonus(user.petEquipped);
+        successRate += (petBonus - 1) * 0.1;
+      }
+      
       const pass = Math.random() < successRate;
       let msg = `🏰 Dungeon: ${pick.name}\n🔥 Độ khó: ${pick.level}`;
       
       if (pass) {
-        user.exp += pick.reward;
-        user.linhThach += Math.floor(pick.level / 2);
-        msg += `\n✅ Thành công! Nhận ${pick.reward} EXP + ${Math.floor(pick.level / 2)} LT.`;
+        let reward = pick.reward;
+        let ltReward = Math.floor(pick.level / 2);
+        
+        // Pet bonus for rewards
+        if (user.petEquipped) {
+          const petBonus = this.getPetBonus(user.petEquipped);
+          reward = Math.floor(reward * petBonus);
+          ltReward = Math.floor(ltReward * petBonus);
+        }
+        
+        user.exp += reward;
+        user.linhThach += ltReward;
+        msg += `\n✅ Thành công! Nhận ${reward} EXP + ${ltReward} LT.`;
+        if (user.petEquipped) msg += `\n🐾 Pet bonus được áp dụng!`;
       } else {
         user.theChat -= 10;
         msg += `\n💀 Thất bại! Mất 10 thể chất.`;
       }
+      
+      user.lastDungeon = now;
       this.saveAllData(data);
       return api.sendMessage(msg, threadID, messageID);
     }
@@ -784,6 +930,12 @@ module.exports = class {
 
       let dmg = Math.floor(Math.random() * 201) + 100;
       
+      // Pet bonus
+      if (user.petEquipped) {
+        const petBonus = this.getPetBonus(user.petEquipped);
+        dmg = Math.floor(dmg * petBonus);
+      }
+      
       // Clan bonuses
       if (user.clan && clanData[user.clan]) {
         const clan = clanData[user.clan];
@@ -794,7 +946,9 @@ module.exports = class {
       boss.damage[senderID] = (boss.damage[senderID] || 0) + dmg;
       user.bossDamage += dmg;
 
-      let msg = `🐲 Bạn đánh ${boss.name} gây ${dmg} sát thương!\n${boss.name} còn ${Math.max(0, boss.hp)} HP.`;
+      let msg = `🐲 Bạn đánh ${boss.name} gây ${dmg} sát thương!`;
+      if (user.petEquipped) msg += ` (🐾 Pet bonus)`;
+      msg += `\n${boss.name} còn ${Math.max(0, boss.hp)} HP.`;
 
       if (boss.hp <= 0) {
         boss.defeated = true;
