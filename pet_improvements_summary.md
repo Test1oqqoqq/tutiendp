@@ -94,3 +94,45 @@ Tất cả pet đều có icon màu để dễ nhận biết!
 - `title equip <tên>` - Trang bị danh hiệu
 - `title remove` - Gỡ danh hiệu hiện tại
 - `title all` - Xem tất cả danh hiệu và tiến độ
+
+## 🏯 Hệ Thống Clan Cải Tiến
+
+### 🔧 Hệ Thống Phê Duyệt Thành Viên
+- **Join Request**: Không tự động vào clan, phải xin và chờ duyệt
+- **Approval System**: Bang Chủ/Phó Bang Chủ phê duyệt đơn xin vào
+- **Request Management**: Xem, duyệt, từ chối đơn xin vào
+- **Auto Cleanup**: Tự động xóa đơn của người đã vào clan khác
+
+### 💥 Tính Năng Giải Tán Clan
+- **Disband Command**: Bang Chủ có thể giải tán clan
+- **Member Removal**: Tất cả thành viên tự động rời clan
+- **Data Cleanup**: Xóa hoàn toàn dữ liệu clan
+
+### 📋 Danh Sách Lệnh Clan Đầy Đủ
+
+#### 🌐 Lệnh Chung (Mọi người)
+- `clan` - Xem thông tin clan hiện tại
+- `clan help` - Xem tất cả lệnh clan
+- `clan create <tên>` - Tạo clan mới (100 LT)
+- `clan join <tên>` - Xin vào clan (chờ phê duyệt)
+- `clan leave` - Rời clan
+- `clan list` - Xem top clan
+- `clan donate <số>` - Donate Linh Thạch cho clan
+
+#### 🔧 Lệnh Phó Bang Chủ/Bang Chủ
+- `clan upgrade <building>` - Nâng cấp công trình
+- `clan requests` - Xem danh sách đơn xin vào
+- `clan approve <số>` - Phê duyệt đơn xin vào
+- `clan reject <số>` - Từ chối đơn xin vào
+
+#### 👑 Lệnh Bang Chủ
+- `clan disband` - Giải tán clan (cảnh báo: không thể hoàn tác!)
+- `clan kick <@user>` - Đuổi thành viên
+- `clan promote <@user>` - Thăng chức thành viên
+- `clan demote <@user>` - Giáng chức thành viên
+
+### 🎯 Cải Tiến UI/UX
+- **Smart Display**: Hiển thị số đơn xin vào cho leader/co-leader
+- **Role-based Commands**: Menu lệnh thay đổi theo vai trò
+- **Clear Instructions**: Hướng dẫn rõ ràng cho mỗi tình huống
+- **Error Handling**: Xử lý lỗi thông minh và thông báo rõ ràng

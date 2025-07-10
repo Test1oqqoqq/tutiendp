@@ -326,6 +326,14 @@ module.exports = class {
     const { threadID, senderID, messageID } = event;
     const data = this.getAllData();
     const clanData = this.getClanData();
+    
+    // Initialize pendingRequests for existing clans
+    Object.values(clanData).forEach(clan => {
+      if (!clan.hasOwnProperty('pendingRequests')) {
+        clan.pendingRequests = [];
+      }
+    });
+    
     const fbName = (await api.getUserInfo(senderID))[senderID].name;
 
     // Initialize user data
@@ -353,12 +361,20 @@ module.exports = class {
         lastClanActivity: 0,
         lastDungeon: 0,
         availableTitles: [],
-        equippedTitle: null
+        equippedTitle: null,
+        clanRequests: []
       };
     }
 
     const user = data[senderID];
     user.name = fbName;
+    
+    // Initialize new properties for existing users
+    if (!user.hasOwnProperty('clanRequests')) user.clanRequests = [];
+    if (!user.hasOwnProperty('availableTitles')) user.availableTitles = [];
+    if (!user.hasOwnProperty('equippedTitle')) user.equippedTitle = null;
+    if (!user.hasOwnProperty('lastDungeon')) user.lastDungeon = 0;
+    
     const cmd = args[0]?.toLowerCase();
 
     // Auto-update titles
@@ -578,9 +594,10 @@ module.exports = class {
         if (!user.clan) {
           return api.sendMessage(`🏯 𝗖𝗟𝗔𝗡 𝗦𝗬𝗦𝗧𝗘𝗠\n━━━━━━━━━━━━\n` +
             `📝 Tạo clan: clan create <tên>\n` +
-            `🚪 Vào clan: clan join <tên>\n` +
+            `🚪 Xin vào clan: clan join <tên>\n` +
             `📋 Danh sách: clan list\n` +
-            `🔍 Tìm kiếm: clan search <tên>`, threadID, messageID);
+            `🔍 Tìm kiếm: clan search <tên>\n` +
+            `❓ Trợ giúp: clan help`, threadID, messageID);
         } else {
           const clan = clanData[user.clan];
           if (!clan) {
@@ -591,9 +608,17 @@ module.exports = class {
           }
           
           const memberCount = Object.values(data).filter(u => u.clan === user.clan).length;
+          const pendingCount = clan.pendingRequests ? clan.pendingRequests.length : 0;
+          
           let msg = `🏯 ${clan.name}\n👑 Bang chủ: ${clan.leader}\n👥 Thành viên: ${memberCount}/${clan.maxMembers || 20}\n`;
           msg += `💰 Kho bạc: ${clan.treasury || 0} LT\n🎯 Tổng đóng góp: ${clan.totalContribution || 0}\n`;
-          msg += `📈 Level: ${clan.level || 1}\n📜 Mô tả: ${clan.description || "Chưa có mô tả"}`;
+          msg += `📈 Level: ${clan.level || 1}\n📜 Mô tả: ${clan.description || "Chưa có mô tả"}\n`;
+          
+          if (pendingCount > 0 && (user.clanRole === "leader" || user.clanRole === "vice")) {
+            msg += `📝 Đơn xin vào: ${pendingCount} người\n`;
+          }
+          
+          msg += `\n❓ Dùng: clan help để xem lệnh`;
           
           return api.sendMessage(msg, threadID, messageID);
         }
@@ -621,6 +646,7 @@ module.exports = class {
           totalContribution: 0,
           maxMembers: 20,
           description: "",
+          pendingRequests: [],
           buildings: {
             training: 0,
             library: 0,
@@ -648,12 +674,29 @@ module.exports = class {
           return api.sendMessage("❌ Clan đã đầy!", threadID, messageID);
         }
         
-        user.clan = name;
-        user.clanRole = "member";
-        user.clanContribution = 0;
+        // Initialize pending requests if not exists
+        clan.pendingRequests = clan.pendingRequests || [];
         
-        this.saveAllData(data);
-        return api.sendMessage(`🎉 Đã gia nhập clan "${name}" thành công!`, threadID, messageID);
+        // Check if user already has pending request
+        if (clan.pendingRequests.some(req => req.userId === senderID)) {
+          return api.sendMessage("❌ Bạn đã gửi đơn xin vào clan này rồi! Chờ phê duyệt.", threadID, messageID);
+        }
+        
+        // Add to pending requests
+        clan.pendingRequests.push({
+          userId: senderID,
+          userName: user.name,
+          timestamp: Date.now()
+        });
+        
+        this.saveClanData(clanData);
+        
+        // Notify clan leaders
+        const leaders = Object.values(data).filter(u => 
+          u.clan === name && (u.clanRole === "leader" || u.clanRole === "vice")
+        );
+        
+        return api.sendMessage(`📝 Đã gửi đơn xin vào clan "${name}"!\nChờ Bang Chủ hoặc Phó Bang Chủ phê duyệt.`, threadID, messageID);
       }
       
       if (sub === "leave") {
@@ -739,6 +782,165 @@ module.exports = class {
         this.saveClanData(clanData);
         
         return api.sendMessage(`💰 Đã donate ${amount} Linh Thạch cho clan!`, threadID, messageID);
+      }
+      
+      if (sub === "help") {
+        let msg = `🏯 𝗖𝗟𝗔𝗡 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦\n━━━━━━━━━━━━━━━━\n`;
+        
+        if (!user.clan) {
+          msg += `📝 clan create <tên> - Tạo clan (100 LT)\n`;
+          msg += `🚪 clan join <tên> - Xin vào clan\n`;
+          msg += `📋 clan list - Xem top clan\n`;
+          msg += `🔍 clan search <tên> - Tìm clan\n`;
+        } else {
+          msg += `🏠 clan - Thông tin clan\n`;
+          msg += `🚪 clan leave - Rời clan\n`;
+          msg += `💰 clan donate <số> - Donate Linh Thạch\n`;
+          
+          const userRole = this.clanRoles[user.clanRole];
+          if (userRole.level >= 2) { // Vice leader+
+            msg += `\n🔧 QUẢN LÝ:\n`;
+            msg += `⬆️ clan upgrade <building> - Nâng cấp\n`;
+            msg += `📝 clan requests - Xem đơn xin vào\n`;
+            msg += `✅ clan approve <số> - Duyệt đơn\n`;
+            msg += `❌ clan reject <số> - Từ chối đơn\n`;
+          }
+          
+          if (user.clanRole === "leader") {
+            msg += `\n👑 BANG CHỦ:\n`;
+            msg += `💥 clan disband - Giải tán clan\n`;
+            msg += `👥 clan kick <@user> - Đuổi thành viên\n`;
+            msg += `⬆️ clan promote <@user> - Thăng chức\n`;
+            msg += `⬇️ clan demote <@user> - Giáng chức\n`;
+          }
+        }
+        
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "requests") {
+        if (!user.clan) return api.sendMessage("❌ Bạn không ở trong clan nào!", threadID, messageID);
+        
+        const userRole = this.clanRoles[user.clanRole];
+        if (userRole.level < 2) return api.sendMessage("❌ Chỉ Phó Bang Chủ trở lên mới xem được đơn xin vào!", threadID, messageID);
+        
+        const clan = clanData[user.clan];
+        clan.pendingRequests = clan.pendingRequests || [];
+        
+        if (clan.pendingRequests.length === 0) {
+          return api.sendMessage("📝 Không có đơn xin vào nào!", threadID, messageID);
+        }
+        
+        let msg = `📝 𝗗𝗔𝗡𝗛 𝗦𝗔́𝗖𝗛 Đ𝗢̛𝗡 𝗫𝗜𝗡 𝗩𝗔̀𝗢\n━━━━━━━━━━━━━━━━\n`;
+        clan.pendingRequests.forEach((req, i) => {
+          const timeAgo = Math.floor((Date.now() - req.timestamp) / 60000);
+          msg += `${i + 1}. ${req.userName} (${timeAgo} phút trước)\n`;
+        });
+        
+        msg += `\n✅ Dùng: clan approve <số>\n❌ Dùng: clan reject <số>`;
+        
+        return api.sendMessage(msg, threadID, messageID);
+      }
+      
+      if (sub === "approve") {
+        if (!user.clan) return api.sendMessage("❌ Bạn không ở trong clan nào!", threadID, messageID);
+        
+        const userRole = this.clanRoles[user.clanRole];
+        if (userRole.level < 2) return api.sendMessage("❌ Chỉ Phó Bang Chủ trở lên mới được duyệt đơn!", threadID, messageID);
+        
+        const requestIndex = parseInt(args[2]) - 1;
+        if (isNaN(requestIndex)) return api.sendMessage("❌ Vui lòng nhập số thứ tự đơn!", threadID, messageID);
+        
+        const clan = clanData[user.clan];
+        clan.pendingRequests = clan.pendingRequests || [];
+        
+        if (requestIndex < 0 || requestIndex >= clan.pendingRequests.length) {
+          return api.sendMessage("❌ Số thứ tự không hợp lệ!", threadID, messageID);
+        }
+        
+        const request = clan.pendingRequests[requestIndex];
+        const newMember = data[request.userId];
+        
+        if (!newMember) {
+          clan.pendingRequests.splice(requestIndex, 1);
+          this.saveClanData(clanData);
+          return api.sendMessage("❌ Người dùng không tồn tại! Đã xóa đơn.", threadID, messageID);
+        }
+        
+        if (newMember.clan) {
+          clan.pendingRequests.splice(requestIndex, 1);
+          this.saveClanData(clanData);
+          return api.sendMessage("❌ Người này đã ở clan khác rồi! Đã xóa đơn.", threadID, messageID);
+        }
+        
+        // Check if clan is full
+        const memberCount = Object.values(data).filter(u => u.clan === user.clan).length;
+        if (memberCount >= (clan.maxMembers || 20)) {
+          return api.sendMessage("❌ Clan đã đầy!", threadID, messageID);
+        }
+        
+        // Approve the request
+        newMember.clan = user.clan;
+        newMember.clanRole = "member";
+        newMember.clanContribution = 0;
+        
+        clan.pendingRequests.splice(requestIndex, 1);
+        
+        this.saveAllData(data);
+        this.saveClanData(clanData);
+        
+        return api.sendMessage(`✅ Đã phê duyệt ${request.userName} gia nhập clan!`, threadID, messageID);
+      }
+      
+      if (sub === "reject") {
+        if (!user.clan) return api.sendMessage("❌ Bạn không ở trong clan nào!", threadID, messageID);
+        
+        const userRole = this.clanRoles[user.clanRole];
+        if (userRole.level < 2) return api.sendMessage("❌ Chỉ Phó Bang Chủ trở lên mới được từ chối đơn!", threadID, messageID);
+        
+        const requestIndex = parseInt(args[2]) - 1;
+        if (isNaN(requestIndex)) return api.sendMessage("❌ Vui lòng nhập số thứ tự đơn!", threadID, messageID);
+        
+        const clan = clanData[user.clan];
+        clan.pendingRequests = clan.pendingRequests || [];
+        
+        if (requestIndex < 0 || requestIndex >= clan.pendingRequests.length) {
+          return api.sendMessage("❌ Số thứ tự không hợp lệ!", threadID, messageID);
+        }
+        
+        const request = clan.pendingRequests[requestIndex];
+        clan.pendingRequests.splice(requestIndex, 1);
+        
+        this.saveClanData(clanData);
+        
+        return api.sendMessage(`❌ Đã từ chối đơn của ${request.userName}!`, threadID, messageID);
+      }
+      
+      if (sub === "disband") {
+        if (!user.clan) return api.sendMessage("❌ Bạn không ở trong clan nào!", threadID, messageID);
+        
+        if (user.clanRole !== "leader") {
+          return api.sendMessage("❌ Chỉ Bang Chủ mới có thể giải tán clan!", threadID, messageID);
+        }
+        
+        const clanName = user.clan;
+        
+        // Remove all members from clan
+        Object.values(data).forEach(u => {
+          if (u.clan === clanName) {
+            u.clan = null;
+            u.clanRole = "member";
+            u.clanContribution = 0;
+          }
+        });
+        
+        // Delete clan data
+        delete clanData[clanName];
+        
+        this.saveAllData(data);
+        this.saveClanData(clanData);
+        
+        return api.sendMessage(`💥 Clan "${clanName}" đã được giải tán!\nTất cả thành viên đã được rời clan.`, threadID, messageID);
       }
     }
 
