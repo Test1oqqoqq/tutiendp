@@ -98,7 +98,7 @@ module.exports = class {
         author: "Dũngkon",
         info: "Game Poker Texas Hold'em cho nhóm, gửi bài riêng cho từng người",
         Category: "Game",
-        guides: "[create/join/start/deal/flop/turn/river/show/leave/info/checkgroup/reset]",
+        guides: "[create/join/start/deal/action/info/checkgroup/reset/huongdan]",
         cd: 0,
         hasPrefix: true,
         images: []
@@ -113,7 +113,7 @@ module.exports = class {
 
         if (!args[0]) {
             return api.sendMessage(
-                `♠️ Poker ♠️
+                `♠️ POKER TEXAS HOLD'EM ♠️
 
 » poker create <coins>: Tạo bàn chơi (bắt buộc nhập số coins)
 » poker join: Tham gia bàn
@@ -124,9 +124,9 @@ module.exports = class {
 » poker info: Xem thông tin bàn
 » poker checkgroup: Kiểm tra nhóm riêng của từng người
 » poker reset: Xoá bàn chơi (chỉ chủ bàn)
-» poker huongdan: để xem hướng dẫn chơi và luật chơi của game poker
+» poker huongdan: Xem hướng dẫn chơi và luật chơi
 
-» LƯU Ý KẾT BẠN VỚI BOT TRƯỚC KHI CHƠI`,
+💡 LƯU Ý: KẾT BẠN VỚI BOT TRƯỚC KHI CHƠI`,
                 threadID, messageID
             );
         }
@@ -767,21 +767,24 @@ module.exports = class {
     }
 
     static async onEvent({ api, event, Users, Currencies }) {
-        // Logic for onEvent
+        // Logic for onEvent - có thể xử lý các sự kiện khác
     }
 
     static async onReaction({ api, event, Users, Currencies }) {
-        // Logic for onReaction
+        // Logic for onReaction - xử lý khi có người react
     }
 
     static async onLoad({ api }) {
-        // Logic for onLoad - khởi tạo cache folder nếu cần
+        // Logic for onLoad - khởi tạo khi bot start
         try {
             await fs.ensureDir('./cache');
-        } catch (e) {}
+            console.log('✅ Poker module loaded successfully!');
+        } catch (e) {
+            console.error('❌ Error loading poker module:', e);
+        }
     }
 
     static async onReply({ api, event, Users, Currencies }) {
-        // Logic for onReply
+        // Logic for onReply - xử lý khi có reply
     }
 }
